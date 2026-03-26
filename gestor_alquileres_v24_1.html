@@ -1,0 +1,3904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0f0f">
+<title>Gestión Alquileres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #f0f0f0;
+    --muted: #888;
+    --accent: #c8a96e;
+    --accent2: #e8c989;
+    --danger: #e05555;
+    --success: #4caf6e;
+    --info: #5b9bd5;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+    padding: 16px 20px 12px;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; }
+  .header h1 { font-size: 20px; font-weight: 500; margin-top: 4px; }
+  .header .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sync-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface2); border: 0.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 15px; transition: all 0.2s;
+  }
+  .sync-btn:active { transform: scale(0.92); background: var(--surface); }
+
+  /* ── NAV TABS ── */
+  .tabs {
+    display: flex; gap: 4px; padding: 8px 20px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 400; color: var(--muted);
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    border: 0.5px solid transparent;
+  }
+  .tab.active { background: var(--accent); color: #0a0a0a; font-weight: 500; }
+  .tab:not(.active):active { background: var(--surface2); }
+
+  /* ── MAIN ── */
+  main { padding: 16px 20px; padding-bottom: calc(80px + var(--safe-bottom)); }
+
+  /* ── PISOS GRID ── */
+  .pisos-grid { display: flex; flex-direction: column; gap: 12px; }
+
+  .piso-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .piso-card:active { transform: scale(0.98); border-color: var(--border2); }
+  .piso-card.selected { border-color: var(--accent); }
+
+  .piso-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+  }
+  .piso-icon {
+    width: 42px; height: 42px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .piso-icon.turismo { background: rgba(200,169,110,0.15); }
+  .piso-icon.residencial { background: rgba(91,155,213,0.15); }
+  .piso-icon.oficina { background: rgba(76,175,110,0.15); }
+
+  .piso-info { flex: 1; min-width: 0; }
+  .piso-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .piso-addr { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .piso-badge {
+    font-size: 11px; font-family: var(--mono);
+    padding: 3px 8px; border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .badge-activo { background: rgba(76,175,110,0.15); color: #4caf6e; }
+  .badge-vacio { background: rgba(136,136,136,0.12); color: var(--muted); }
+  .badge-alerta { background: rgba(224,85,85,0.15); color: var(--danger); }
+
+  .piso-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border-top: 0.5px solid var(--border);
+  }
+  .stat { padding: 10px 12px; text-align: center; }
+  .stat:not(:last-child) { border-right: 0.5px solid var(--border); }
+  .stat-val { font-size: 14px; font-weight: 500; font-family: var(--mono); }
+  .stat-key { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .stat-val.income { color: var(--success); }
+  .stat-val.expense { color: var(--danger); }
+  .stat-val.docs { color: var(--accent); }
+
+  /* ── CARPETAS / DETAIL ── */
+  .back-btn {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--accent); cursor: pointer;
+    margin-bottom: 16px; padding: 4px 0;
+  }
+  .back-btn:active { opacity: 0.7; }
+
+  .detail-title { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .detail-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+  .carpetas-grid { display: flex; flex-direction: column; gap: 8px; }
+
+  .carpeta-row {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none; color: inherit;
+  }
+  .carpeta-row:active { background: var(--surface2); border-color: var(--border2); }
+
+  .folder-ico { font-size: 20px; width: 32px; text-align: center; }
+  .carpeta-info { flex: 1; }
+  .carpeta-name { font-size: 14px; font-weight: 400; }
+  .carpeta-count { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .carpeta-arrow { color: var(--muted); font-size: 14px; }
+
+  /* ── UPLOAD SECTION ── */
+  .upload-section {
+    background: var(--surface);
+    border: 0.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 20px; margin-bottom: 16px;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-section:active { background: var(--surface2); border-color: var(--accent); }
+  .upload-ico { font-size: 28px; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; font-weight: 500; }
+  .upload-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  #fileInput { display: none; }
+
+  /* ── NOTA FORM ── */
+  .nota-form { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 16px; }
+  .nota-form textarea {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: var(--font); font-size: 14px;
+    resize: none; line-height: 1.6;
+    min-height: 80px;
+  }
+  .nota-form textarea::placeholder { color: var(--muted); }
+  .nota-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 18px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; font-family: var(--font);
+    cursor: pointer; border: none; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #0a0a0a; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 0.5px solid var(--border2); }
+  .btn-danger { background: rgba(224,85,85,0.15); color: var(--danger); border: 0.5px solid rgba(224,85,85,0.25); }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  /* ── ACTIVIDAD / TIMELINE ── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .dot-doc { background: var(--accent); }
+  .dot-pago { background: var(--success); }
+  .dot-gasto { background: var(--danger); }
+  .dot-nota { background: var(--info); }
+  .dot-incid { background: #ff9800; }
+
+  .tl-content { flex: 1; }
+  .tl-title { font-size: 13px; font-weight: 400; }
+  .tl-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .tl-tag {
+    font-size: 10px; font-family: var(--mono);
+    padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+  }
+
+  /* ── RESUMEN FINANCIERO ── */
+  .fin-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .fin-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+  }
+  .fin-card .label { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .fin-card .amount { font-size: 22px; font-weight: 500; font-family: var(--mono); }
+  .fin-card .amount.green { color: var(--success); }
+  .fin-card .amount.red { color: var(--danger); }
+  .fin-card .amount.gold { color: var(--accent); }
+  .fin-card .trend { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── INCIDENCIAS ── */
+  .incidencia-item {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
+  }
+  .inc-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .inc-title { font-size: 14px; font-weight: 500; }
+  .inc-status {
+    font-size: 10px; font-family: var(--mono);
+    padding: 3px 8px; border-radius: 10px;
+  }
+  .status-open { background: rgba(224,85,85,0.15); color: var(--danger); }
+  .status-progress { background: rgba(255,152,0,0.15); color: #ff9800; }
+  .status-done { background: rgba(76,175,110,0.15); color: var(--success); }
+  .inc-desc { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .inc-meta { font-size: 11px; color: var(--muted); margin-top: 8px; display: flex; gap: 12px; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed; bottom: calc(80px + var(--safe-bottom) + 12px); right: 20px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent); color: #0a0a0a;
+    border: none; font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(200,169,110,0.35);
+    transition: all 0.2s; z-index: 50;
+  }
+  .fab:active { transform: scale(0.92); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(12px);
+    border-top: 0.5px solid var(--border);
+    padding: 8px 0 calc(8px + var(--safe-bottom));
+    display: grid; grid-template-columns: repeat(4,1fr);
+    z-index: 100;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; cursor: pointer; padding: 4px;
+    transition: all 0.15s;
+  }
+  .nav-item:active { opacity: 0.7; }
+  .nav-ico { font-size: 20px; }
+  .nav-label { font-size: 10px; color: var(--muted); }
+  .nav-item.active .nav-ico { filter: brightness(2.5) sepia(1) hue-rotate(10deg) saturate(3); }
+  .nav-item.active .nav-label { color: var(--accent); }
+
+  /* ── MODAL SHEET ── */
+  .sheet-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .sheet-backdrop.open { opacity: 1; pointer-events: all; }
+  .sheet {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%);
+    width: 100%; max-width: 480px;
+    background: var(--surface); border-top: 0.5px solid var(--border2);
+    border-radius: 18px 18px 0 0;
+    padding: 0 20px calc(32px + var(--safe-bottom));
+    z-index: 201; transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    max-height: 85dvh; overflow-y: auto;
+  }
+  .sheet.open { transform: translateX(-50%) translateY(0); }
+  .sheet-handle {
+    width: 36px; height: 4px; background: var(--border2);
+    border-radius: 2px; margin: 12px auto 20px;
+  }
+  .sheet-title { font-size: 18px; font-weight: 500; margin-bottom: 16px; }
+  .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sheet-opt {
+    background: var(--surface2); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px 12px;
+    text-align: center; cursor: pointer; transition: all 0.15s;
+  }
+  .sheet-opt:active { border-color: var(--accent); }
+  .sheet-opt .ico { font-size: 24px; margin-bottom: 8px; }
+  .sheet-opt .lbl { font-size: 13px; font-weight: 400; }
+  .sheet-opt .sublbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: calc(96px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1e1e1e; border: 0.5px solid var(--border2);
+    border-radius: 20px; padding: 10px 18px;
+    font-size: 13px; white-space: nowrap;
+    z-index: 300; opacity: 0; transition: all 0.25s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SEARCH ── */
+  .search-bar {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 0 14px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .search-bar input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: var(--font); font-size: 14px;
+    padding: 12px 0;
+  }
+  .search-bar input::placeholder { color: var(--muted); }
+  .search-ico { color: var(--muted); font-size: 16px; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin: 20px 0 10px; font-family: var(--mono);
+  }
+
+  /* ── DRIVE LINK ── */
+  .drive-link {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 8px;
+  }
+  .drive-link:active { border-color: var(--accent); }
+  .drive-link .dl-ico { font-size: 22px; width: 36px; text-align: center; }
+  .drive-link .dl-info { flex: 1; }
+  .drive-link .dl-name { font-size: 14px; }
+  .drive-link .dl-path { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+  .drive-link .dl-arr { color: var(--muted); }
+
+  /* ── FIANZA ── */
+  .fianza-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
+  }
+  .fianza-card-header {
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+  }
+  .fianza-card-header:active { background: var(--surface2); }
+  .fianza-pill {
+    font-size: 10px; font-family: var(--mono); padding: 3px 9px;
+    border-radius: 10px; flex-shrink: 0;
+  }
+  .fianza-pill.deposito { background: rgba(200,169,110,0.15); color: var(--accent); }
+  .fianza-pill.devolucion { background: rgba(91,155,213,0.15); color: var(--info); }
+  .fianza-pill.done { background: rgba(76,175,110,0.15); color: var(--success); }
+  .fianza-pill.blocked { background: rgba(224,85,85,0.15); color: var(--danger); }
+
+  .fianza-progress-bar {
+    height: 3px; background: var(--surface2);
+    margin: 0 16px 14px;
+  }
+  .fianza-progress-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .fill-deposito { background: var(--accent); }
+  .fill-devolucion { background: var(--info); }
+  .fill-done { background: var(--success); }
+
+  .fianza-steps { padding: 0 12px 14px; }
+
+  .step-item {
+    display: flex; gap: 0; position: relative;
+  }
+  .step-left {
+    display: flex; flex-direction: column; align-items: center;
+    width: 32px; flex-shrink: 0;
+  }
+  .step-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; cursor: pointer; transition: all 0.2s;
+    flex-shrink: 0; background: var(--surface);
+    position: relative; z-index: 1;
+  }
+  .step-check.done { background: var(--success); border-color: var(--success); }
+  .step-check.done::after { content: '✓'; color: #0a0a0a; font-weight: 700; font-size: 12px; }
+  .step-check.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,169,110,0.15); }
+  .step-check.blocked-step { border-color: rgba(224,85,85,0.4); opacity: 0.5; cursor: not-allowed; }
+
+  .step-line {
+    width: 1.5px; flex: 1; min-height: 12px;
+    background: var(--border); margin: 2px 0;
+  }
+  .step-line.done { background: var(--success); }
+
+  .step-body {
+    flex: 1; padding: 2px 0 16px 10px;
+  }
+  .step-title {
+    font-size: 13px; font-weight: 500; line-height: 1.3;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step-title.done-text { color: var(--muted); text-decoration: line-through; }
+  .step-meta { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .step-date-badge {
+    font-size: 10px; font-family: var(--mono);
+    padding: 2px 7px; border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted); flex-shrink: 0;
+  }
+  .step-date-badge.urgent { background: rgba(224,85,85,0.15); color: var(--danger); }
+  .step-date-badge.ok { background: rgba(76,175,110,0.12); color: var(--success); }
+
+  .step-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+
+  .fianza-summary {
+    border-top: 0.5px solid var(--border);
+    padding: 10px 16px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+  .fsumm-item { text-align: center; }
+  .fsumm-item:not(:last-child) { border-right: 0.5px solid var(--border); }
+  .fsumm-val { font-size: 14px; font-weight: 500; font-family: var(--mono); }
+  .fsumm-key { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  .fianza-nueva-btn {
+    background: var(--surface); border: 0.5px dashed var(--border2);
+    border-radius: var(--radius); padding: 16px; text-align: center;
+    cursor: pointer; transition: all 0.15s; margin-bottom: 14px;
+  }
+  .fianza-nueva-btn:active { border-color: var(--accent); }
+  .fianza-nueva-btn .ico { font-size: 20px; margin-bottom: 6px; }
+  .fianza-nueva-btn .lbl { font-size: 13px; font-weight: 500; }
+  .fianza-nueva-btn .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SUMINISTROS ── */
+  .sumi-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  }
+  .sumi-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; cursor: pointer;
+  }
+  .sumi-header:active { background: var(--surface2); }
+  .sumi-ico-wrap {
+    width: 40px; height: 40px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .sumi-luz { background: rgba(250,199,117,0.15); }
+  .sumi-agua { background: rgba(91,155,213,0.15); }
+  .sumi-gas { background: rgba(224,85,85,0.15); }
+  .sumi-tipo-pill {
+    font-size: 10px; font-family: var(--mono); padding: 3px 9px;
+    border-radius: 10px;
+  }
+  .sumi-tipo-pill.alta { background: rgba(200,169,110,0.15); color: var(--accent); }
+  .sumi-tipo-pill.baja { background: rgba(91,155,213,0.15); color: var(--info); }
+  .sumi-tipo-pill.done { background: rgba(76,175,110,0.15); color: var(--success); }
+
+  .sumi-tabs {
+    display: flex; border-bottom: 0.5px solid var(--border);
+    padding: 0 12px;
+  }
+  .sumi-tab {
+    flex: 1; text-align: center; padding: 10px 4px;
+    font-size: 13px; color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  .sumi-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .sumi-steps-wrap { padding: 12px 12px 4px; }
+
+  .sumi-nueva-btn {
+    background: var(--surface); border: 0.5px dashed var(--border2);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .sumi-nueva-btn:active { border-color: var(--accent); }
+  .sumi-nueva-btn .sni { font-size: 22px; }
+  .sumi-nueva-btn .snl { font-size: 14px; font-weight: 500; }
+  .sumi-nueva-btn .sns { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .sumi-contrato-box {
+    margin: 0 12px 12px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+    padding: 10px 12px; font-size: 12px;
+  }
+  .sumi-contrato-box .scl { color: var(--muted); margin-bottom: 4px; }
+  .sumi-contrato-box .scv { font-family: var(--mono); color: var(--accent); }
+
+  /* ── CONTRATO NUEVO ── */
+  .contrato-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  }
+  .contrato-header {
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+  }
+  .contrato-header:active { background: var(--surface2); }
+  .fase-badge {
+    font-size: 10px; font-family: var(--mono); padding: 2px 8px;
+    border-radius: 10px; flex-shrink: 0;
+  }
+  .fase-0 { background: rgba(136,136,136,0.15); color: var(--muted); }
+  .fase-1 { background: rgba(200,169,110,0.15); color: var(--accent); }
+  .fase-2 { background: rgba(91,155,213,0.15); color: var(--info); }
+  .fase-3 { background: rgba(76,175,110,0.15); color: var(--success); }
+  .contrato-section-label {
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); font-family: var(--mono);
+    padding: 12px 16px 6px; border-top: 0.5px solid var(--border);
+  }
+
+  /* ── MANTENIMIENTO ── */
+  .mant-resumen {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px;
+  }
+  .mant-stat {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 12px 10px; text-align: center;
+  }
+  .mant-stat .mv { font-size: 18px; font-weight: 500; font-family: var(--mono); }
+  .mant-stat .mk { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+
+  .averia-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .averia-card:active { border-color: var(--border2); }
+  .averia-card.expanded { border-color: var(--border2); }
+  .averia-top {
+    display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+  }
+  .averia-cat-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .cat-fontaneria { background: #5b9bd5; }
+  .cat-electricidad { background: #fac775; }
+  .cat-estructura { background: #e05555; }
+  .cat-electrodomesticos { background: #4caf6e; }
+  .cat-pintura { background: #c8a96e; }
+  .cat-otros { background: #888; }
+
+  .averia-info { flex: 1; min-width: 0; }
+  .averia-titulo { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .averia-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .averia-importe {
+    font-size: 15px; font-weight: 500; font-family: var(--mono);
+    color: var(--danger); flex-shrink: 0;
+  }
+  .averia-detail {
+    border-top: 0.5px solid var(--border); padding: 12px 14px;
+    display: none;
+  }
+  .averia-detail.open { display: block; }
+  .averia-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+  .averia-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
+  }
+  .averia-field { background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .averia-field .afl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .averia-field .afv { font-size: 13px; font-family: var(--mono); }
+
+  .cat-filter-row {
+    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+    padding-bottom: 4px; margin-bottom: 14px;
+  }
+  .cat-filter-row::-webkit-scrollbar { display: none; }
+  .cat-chip {
+    flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; cursor: pointer; border: 0.5px solid var(--border2);
+    background: var(--surface); transition: all 0.15s; white-space: nowrap;
+  }
+  .cat-chip.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .cat-chip:active { opacity: 0.7; }
+
+  .nueva-averia-form {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+    display: none;
+  }
+  .nueva-averia-form.open { display: block; }
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  .form-input {
+    width: 100%; background: var(--surface2);
+    border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 10px 12px; color: var(--text);
+    font-family: var(--font); font-size: 14px; outline: none;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+
+  /* ── GASTOS FISCAL ── */
+  .gasto-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .gasto-card:active { border-color: var(--border2); }
+  .gasto-card.expanded { border-color: var(--border2); }
+  .gasto-top {
+    display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+  }
+  .gasto-cat-ico {
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .gasto-info { flex: 1; min-width: 0; }
+  .gasto-titulo { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gasto-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .gasto-importe { font-size: 15px; font-weight: 500; font-family: var(--mono); color: var(--danger); flex-shrink: 0; }
+  .gasto-detail { border-top: 0.5px solid var(--border); padding: 12px 14px; display: none; }
+  .gasto-detail.open { display: block; }
+  .gasto-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .gasto-field { background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .gasto-field .gfl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .gasto-field .gfv { font-size: 12px; font-family: var(--mono); }
+  .fiscal-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px; font-family: var(--mono);
+  }
+  .fiscal-si { background: rgba(76,175,110,0.15); color: var(--success); }
+  .fiscal-no { background: rgba(136,136,136,0.12); color: var(--muted); }
+  .fiscal-parcial { background: rgba(200,169,110,0.15); color: var(--accent); }
+
+  .resumen-fiscal {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+  }
+  .resumen-fiscal-title { font-size: 13px; font-weight: 500; margin-bottom: 12px; color: var(--text); }
+  .resumen-fiscal-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 12px;
+  }
+  .resumen-fiscal-row:last-child { border-bottom: none; }
+  .resumen-fiscal-row .cat { color: var(--muted); }
+  .resumen-fiscal-row .imp { font-family: var(--mono); font-weight: 500; color: var(--danger); }
+  .resumen-fiscal-total {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border2);
+    font-size: 14px; font-weight: 500;
+  }
+  .anio-selector {
+    display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none;
+  }
+  .anio-chip {
+    flex-shrink: 0; padding: 5px 14px; border-radius: 20px;
+    font-size: 12px; font-family: var(--mono); cursor: pointer;
+    border: 0.5px solid var(--border2); background: var(--surface);
+    transition: all 0.15s;
+  }
+  .anio-chip.active { background: var(--accent); color: #0a0a0a; border-color: var(--accent); font-weight: 500; }
+
+  /* ── SCROLLBAR THIN ── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty .ei { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* ── HIGHLIGHT ROW ── */
+  @keyframes pulse-border { 0%,100%{border-color:var(--border)} 50%{border-color:var(--accent)} }
+  .uploading { animation: pulse-border 1s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <span class="logo">Cartera Inmobiliaria</span>
+    <div class="sync-btn" onclick="showToast('☁️ Sincronizado con Drive')">⟳</div>
+  </div>
+  <h1 id="pageTitle">Mis Propiedades</h1>
+  <div class="subtitle" id="pageSubtitle">3 activos · 2 ocupados</div>
+  <div class="tabs" id="mainTabs">
+    <div class="tab active" onclick="setTab(this,'pisos')">Propiedades</div>
+    <div class="tab" onclick="setTab(this,'finanzas')">Finanzas</div>
+    <div class="tab" onclick="setTab(this,'fianzas')">Fianzas</div>
+    <div class="tab" onclick="setTab(this,'suministros')">Suministros</div>
+    <div class="tab" onclick="setTab(this,'contrato')">Contrato</div>
+    <div class="tab" onclick="setTab(this,'gastos')">Gastos</div>
+    <div class="tab" onclick="setTab(this,'otradoc')">Otra documentación</div>
+    <div class="tab" onclick="setTab(this,'actividad')">Actividad</div>
+  </div>
+</header>
+
+<main id="mainContent"></main>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openSheet()">+</button>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <div class="nav-item active" onclick="navTo('home')">
+    <span class="nav-ico">🏠</span>
+    <span class="nav-label">Inicio</span>
+  </div>
+  <div class="nav-item" onclick="navTo('docs')">
+    <span class="nav-ico">📄</span>
+    <span class="nav-label">Documentos</span>
+  </div>
+  <div class="nav-item" onclick="navTo('drive')">
+    <span class="nav-ico">☁️</span>
+    <span class="nav-label">Drive</span>
+  </div>
+  <div class="nav-item" onclick="navTo('config')">
+    <span class="nav-ico">⚙️</span>
+    <span class="nav-label">Config</span>
+  </div>
+</nav>
+
+<!-- Sheet -->
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheetTitle">Añadir documento</div>
+  <div id="sheetContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- File input -->
+<input type="file" id="fileInput" multiple accept="*/*" onchange="handleFiles(this)">
+
+<script>
+const PISOS = [];
+
+const ACTIVIDAD = [];
+
+let currentView = 'pisos';
+let currentPiso = null;
+let currentCarpeta = null;
+let selectedPisoForUpload = null;
+
+function fmt(n) { return n.toLocaleString('es-ES') + ' €'; }
+
+// ── RENDER MAIN ──
+function render() {
+  const el = document.getElementById('mainContent');
+  if (currentView === 'pisos') renderPisos(el);
+  else if (currentView === 'piso-detail') renderPisoDetail(el);
+  else if (currentView === 'carpeta') renderCarpeta(el);
+  else if (currentView === 'finanzas') renderFinanzas(el);
+  else if (currentView === 'fianzas') renderFianzas(el);
+  else if (currentView === 'suministros') renderSuministros(el);
+  else if (currentView === 'contrato') renderContrato(el);
+  else if (currentView === 'gastos') renderGastos(el);
+  else if (currentView === 'otradoc') renderOtraDoc(el);
+  else if (currentView === 'actividad') renderActividad(el);
+  else if (currentView === 'docs') renderDocs(el);
+  else if (currentView === 'drive') renderDrive(el);
+  else if (currentView === 'config') renderConfig(el);
+}
+
+// ── PISOS LIST ──
+function renderPisos(el) {
+  const activos = PISOS.filter(p=>p.estado==='activo').length;
+  let html = `
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:16px" onclick="abrirFormPiso()">
+      + Nueva propiedad
+    </button>
+    <div class="pisos-grid">`;
+  if (PISOS.length === 0) {
+    html += `<div class="empty"><div class="ei">🏠</div><p>No hay propiedades aún.<br>Pulsa "Nueva propiedad" para empezar.</p></div>`;
+  }
+  PISOS.forEach(p => {
+    const badgeClass = p.estado === 'activo' ? 'badge-activo' : p.estado === 'vacio' ? 'badge-vacio' : 'badge-alerta';
+    const badgeText = p.estado === 'activo' ? (p.inquilino ? `${p.inquilino}` : 'Turístico activo') : 'Vacío';
+    html += `
+    <div class="piso-card" onclick="openPiso('${p.id}')">
+      <div class="piso-header">
+        <div class="piso-icon ${p.tipo}">${p.ico}</div>
+        <div class="piso-info">
+          <div class="piso-name">${p.nombre}</div>
+          <div class="piso-addr">${p.dir}</div>
+        </div>
+        <span class="piso-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="piso-stats">
+        <div class="stat"><div class="stat-val income">${fmt(Number(p.ingresos)||0)}</div><div class="stat-key">Ingresos</div></div>
+        <div class="stat"><div class="stat-val expense">-${fmt(Number(p.gastos)||0)}</div><div class="stat-key">Gastos mes</div></div>
+        <div class="stat"><div class="stat-val" style="color:${(Number(p.ingresos)||0)-(Number(p.gastos)||0)>=0?'var(--success)':'var(--danger)'}">${fmt((Number(p.ingresos)||0)-(Number(p.gastos)||0))}</div><div class="stat-key">Neto</div></div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  document.getElementById('pageSubtitle').textContent = `${PISOS.length} propiedad${PISOS.length!==1?'es':''} · ${activos} activa${activos!==1?'s':''}`;
+}
+
+// ── FORMULARIO NUEVA / EDITAR PROPIEDAD ──
+function abrirFormPiso(id) {
+  const p = id ? PISOS.find(x=>x.id===id) : null;
+  const titulo = p ? '✏️ Editar propiedad' : '🏠 Nueva propiedad';
+  const ICONOS = ['🏠','🏡','🏢','🏗️','🏬','🏪','🏨','🏦'];
+  const icosHtml = ICONOS.map(i=>`
+    <div onclick="selIco(this,'${i}')" style="width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:1.5px solid ${p&&p.ico===i?'var(--accent)':'var(--border)'};background:${p&&p.ico===i?'rgba(200,169,110,0.15)':'var(--surface2)'}" data-ico="${i}">${i}</div>`).join('');
+  document.getElementById('sheetTitle').textContent = titulo;
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="form-label">Icono</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="icoGrid">${icosHtml}</div>
+        <input type="hidden" id="fp_ico" value="${p?p.ico:'🏠'}">
+      </div>
+      <div>
+        <label class="form-label">Nombre de la propiedad *</label>
+        <input id="fp_nombre" type="text" class="form-input" placeholder="Ej: Piso Delicias, Apt. Turístico…" value="${p?p.nombre:''}">
+      </div>
+      <div>
+        <label class="form-label">Dirección completa</label>
+        <input id="fp_dir" type="text" class="form-input" placeholder="Calle, número, piso · Ciudad" value="${p?p.dir:''}">
+      </div>
+      <div>
+        <label class="form-label">Tipo de propiedad</label>
+        <select id="fp_tipo" class="form-input">
+          <option value="residencial" ${!p||p.tipo==='residencial'?'selected':''}>🏢 Residencial (alquiler habitual)</option>
+          <option value="turismo" ${p&&p.tipo==='turismo'?'selected':''}>🏡 Turístico (vacacional)</option>
+          <option value="oficina" ${p&&p.tipo==='oficina'?'selected':''}>🏗️ Oficina / Local comercial</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Estado</label>
+        <select id="fp_estado" class="form-input">
+          <option value="activo" ${!p||p.estado==='activo'?'selected':''}>✅ Activo / Ocupado</option>
+          <option value="vacio" ${p&&p.estado==='vacio'?'selected':''}>⬜ Vacío / Disponible</option>
+          <option value="obras" ${p&&p.estado==='obras'?'selected':''}>🔧 En obras / No disponible</option>
+        </select>
+      </div>
+      <div class="form-row-2" style="margin-bottom:0">
+        <div>
+          <label class="form-label">Inquilino actual</label>
+          <input id="fp_inquilino" type="text" class="form-input" placeholder="Nombre y apellido" value="${p&&p.inquilino?p.inquilino:''}">
+        </div>
+        <div>
+          <label class="form-label">Renta mensual (€)</label>
+          <input id="fp_renta" type="number" class="form-input" placeholder="0" value="${p?p.renta:0}">
+        </div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:0">
+        <div>
+          <label class="form-label">Ingresos mes (€)</label>
+          <input id="fp_ingresos" type="number" class="form-input" placeholder="0" value="${p?p.ingresos:0}">
+        </div>
+        <div>
+          <label class="form-label">Gastos mes (€)</label>
+          <input id="fp_gastos" type="number" class="form-input" placeholder="0" value="${p?p.gastos:0}">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="guardarPiso('${p?p.id:''}')">
+          💾 ${p?'Guardar cambios':'Crear propiedad'}
+        </button>
+        ${p?`<button class="btn btn-danger btn-sm" onclick="confirmarEliminarPiso('${p.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+function selIco(el, ico) {
+  document.querySelectorAll('#icoGrid > div').forEach(d => {
+    d.style.border = '1.5px solid var(--border)';
+    d.style.background = 'var(--surface2)';
+  });
+  el.style.border = '1.5px solid var(--accent)';
+  el.style.background = 'rgba(200,169,110,0.15)';
+  document.getElementById('fp_ico').value = ico;
+}
+
+
+function confirmarEliminarPiso(id) {
+  const p = PISOS.find(x=>x.id===id);
+  document.getElementById('sheetTitle').textContent = '⚠️ Eliminar propiedad';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:40px;margin-bottom:12px">${p.ico}</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:8px">${p.nombre}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+        Se eliminará esta propiedad de la app y de Google Sheets.<br>
+        Los datos asociados (averías, fianzas…) quedarán en Sheets.
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeSheet()">Cancelar</button>
+        <button class="btn btn-danger" style="flex:1;justify-content:center" onclick="eliminarPiso('${id}')">🗑️ Eliminar</button>
+      </div>
+    </div>`;
+}
+
+
+// ── PISO DETAIL ──
+function openPiso(id) {
+  currentPiso = PISOS.find(p => p.id === id);
+  currentView = 'piso-detail';
+  render();
+}
+
+function renderPisoDetail(el) {
+  const p = currentPiso;
+  const tieneCarpetas = p.driveUrl ? true : false;
+
+  let html = `
+    <div class="back-btn" onclick="backToList()">← Propiedades</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+      <div class="detail-title">${p.ico} ${p.nombre}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px;margin-top:4px">
+        <button class="btn btn-ghost btn-sm" onclick="abrirFormPiso('${p.id}')">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmarEliminarPiso('${p.id}')">🗑️</button>
+      </div>
+    </div>
+    <div class="detail-subtitle">${p.dir}</div>`;
+
+  // Estado carpetas Drive
+  if (tieneCarpetas) {
+    html += `
+    <div style="background:rgba(76,175,110,0.1);border:0.5px solid rgba(76,175,110,0.3);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <span>📁</span>
+      <div style="flex:1;font-size:12px;color:var(--success)">Carpetas creadas en Drive</div>
+      <a href="${p.driveUrl}" target="_blank"><button class="btn btn-ghost btn-sm">Abrir ↗</button></a>
+    </div>`;
+  } else {
+    html += `
+    <div id="driveStatus" style="background:rgba(200,169,110,0.1);border:0.5px solid rgba(200,169,110,0.3);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <span>📁</span>
+      <div style="flex:1;font-size:12px;color:var(--muted)">Carpetas no creadas en Drive aún</div>
+      <button class="btn btn-primary btn-sm" onclick="crearCarpetasManual('${p.id}')">Crear ahora</button>
+    </div>`;
+  }
+
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div class="section-label" style="margin:0">Carpetas</div>
+    <button class="btn btn-ghost btn-sm" onclick="renderPisoDetail(document.getElementById('mainContent'))" title="Actualizar contadores desde Drive">⟳ Actualizar</button>
+  </div>
+    <div class="carpetas-grid" id="carpetasGrid_${p.id}">`;
+  p.carpetas.forEach(c => {
+    html += `
+      <div class="carpeta-row" onclick="openCarpeta('${c.id}')">
+        <span class="folder-ico">${c.ico}</span>
+        <div class="carpeta-info">
+          <div class="carpeta-name">${c.nombre}</div>
+          <div class="carpeta-count" id="count_${p.id}_${c.id}">${c.count!=null?c.count:'…'} archivos</div>
+        </div>
+        <span class="carpeta-arrow">›</span>
+      </div>`;
+  });
+  html += `</div>
+    <div class="section-label" style="margin-top:24px">Acciones rápidas</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="openUploadFor('${p.id}')">📎 Subir archivo</button>
+      <button class="btn btn-ghost" onclick="openNota('${p.id}')">📝 Añadir nota</button>
+      <button class="btn btn-ghost" onclick="openIncidencia('${p.id}')">🔧 Incidencia</button>
+    </div>`;
+  el.innerHTML = html;
+  selectedPisoForUpload = p.id;
+
+  // Actualizar contadores en tiempo real desde Drive
+  // Usamos Promise.all para actualizar todos a la vez cuando todos respondan
+  const pisoId = p.id;
+  const carpetasSnap = p.carpetas.map(c => ({ id: c.id, nombre: c.nombre }));
+
+  carpetasSnap.forEach(function(c) {
+    api({ action:'getFiles', pisoId: pisoId, carpeta: c.nombre })
+      .then(function(res) {
+        const count = (res && res.ok && res.data && res.data.files) ? res.data.files.length : 0;
+        // Actualizar en memoria
+        const pisoIdx = PISOS.findIndex(x => x.id === pisoId);
+        if (pisoIdx !== -1) {
+          const ci = PISOS[pisoIdx].carpetas.findIndex(x => x.id === c.id);
+          if (ci !== -1) PISOS[pisoIdx].carpetas[ci].count = count;
+        }
+        // Actualizar el elemento en pantalla
+        const countEl = document.getElementById('count_' + pisoId + '_' + c.id);
+        if (countEl) {
+          countEl.textContent = count + ' archivo' + (count !== 1 ? 's' : '');
+        }
+      })
+      .catch(function(e) {
+        console.warn('Error actualizando contador carpeta ' + c.nombre + ':', e);
+      });
+  });
+}
+
+// ── CREAR CARPETAS MANUALMENTE PARA UN PISO EXISTENTE ──
+async function crearCarpetasManual(pisoId) {
+  const p = PISOS.find(x => x.id === pisoId);
+  if (!p) return;
+
+  const btn = document.querySelector('#driveStatus button');
+  if (btn) { btn.textContent = '⏳ Creando…'; btn.disabled = true; }
+
+  showToast('📁 Creando carpetas en Drive…');
+
+  const carpetasNombres = p.carpetas.map(c => c.nombre);
+  const res = await api({
+    action:     'createFolders',
+    pisoId:     pisoId,
+    pisoNombre: p.nombre,
+    carpetas:   carpetasNombres,
+  });
+
+  if (res.ok && res.data && res.data.success) {
+    // Guardar URL en el piso local y en Sheets
+    const idx = PISOS.findIndex(x => x.id === pisoId);
+    if (idx !== -1) PISOS[idx].driveUrl = res.data.pisoFolder;
+    currentPiso = PISOS[idx];
+
+    await api({ action:'update', sheet:'Pisos', id: pisoId, data:{ drive_url: res.data.pisoFolder } });
+
+    showToast(`✅ ${carpetasNombres.length} carpetas creadas en Drive`);
+    renderPisoDetail(document.getElementById('mainContent'));
+  } else {
+    const err = res.error || (res.data && res.data.error) || 'Error desconocido';
+    console.error('createFolders error:', err);
+    showToast(`⚠️ Error creando carpetas: ${String(err).substring(0,50)}`);
+    if (btn) { btn.textContent = 'Reintentar'; btn.disabled = false; }
+  }
+}
+
+// ── CARPETA DETAIL ──
+function openCarpeta(cid) {
+  currentCarpeta = currentPiso.carpetas.find(c => c.id === cid);
+  currentView = 'carpeta';
+  render();
+}
+
+function renderCarpeta(el) {
+  const c = currentCarpeta;
+  const p = currentPiso;
+  selectedCarpetaForUpload = c.nombre;
+  selectedPisoForUpload    = p.id;
+
+  el.innerHTML = `
+    <div class="back-btn" onclick="backToPiso()">← ${p.nombre.split(' ').slice(0,2).join(' ')}...</div>
+    <div class="detail-title">${c.ico} ${c.nombre}</div>
+    <div class="detail-subtitle" id="carpetaSubtitle">Cargando archivos… · ${p.nombre}</div>
+
+    <div class="upload-section" onclick="document.getElementById('fileInput').click()" style="margin-bottom:16px">
+      <div class="upload-ico">📎</div>
+      <div class="upload-text">Subir documento a esta carpeta</div>
+      <div class="upload-sub">PDF, imagen, Word, Excel… → se guarda en Google Drive</div>
+    </div>
+
+    <div class="section-label">Nota rápida</div>
+    <div class="nota-form">
+      <textarea id="quickNota" placeholder="Escribe una nota para esta carpeta…"></textarea>
+      <div class="nota-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveNota()">💾 Guardar nota</button>
+        <button class="btn btn-ghost btn-sm" onclick="shareNota()">↗ Compartir</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="section-label" style="margin:0">Documentos en esta carpeta</div>
+      <button class="btn btn-ghost btn-sm" onclick="renderCarpeta(document.getElementById('mainContent'))" title="Actualizar desde Drive">⟳ Actualizar</button>
+    </div>
+    <div id="listaArchivos">
+      <div style="text-align:center;padding:24px;color:var(--muted)">
+        <div style="font-size:28px;margin-bottom:8px">☁️</div>
+        <div style="font-size:13px">Cargando desde Drive…</div>
+      </div>
+    </div>`;
+
+  // Cargar archivos reales desde Drive y actualizar contador
+  api({ action:'getFiles', pisoId: p.id, carpeta: c.nombre })
+    .then(res => {
+      const lista = document.getElementById('listaArchivos');
+      if (!lista) return;
+      const files = (res.ok && res.data && res.data.files) ? res.data.files : [];
+
+      // Actualizar contador en la carpeta local
+      const pisoIdx = PISOS.findIndex(x => x.id === p.id);
+      if (pisoIdx !== -1) {
+        const carpetaIdx = PISOS[pisoIdx].carpetas.findIndex(x => x.nombre === c.nombre);
+        if (carpetaIdx !== -1) PISOS[pisoIdx].carpetas[carpetaIdx].count = files.length;
+        if (currentCarpeta) currentCarpeta.count = files.length;
+        const sub = document.getElementById('carpetaSubtitle');
+        if (sub) sub.textContent = `${files.length} archivo${files.length !== 1 ? 's' : ''} · ${p.nombre}`;
+      }
+
+      if (files.length === 0) {
+        lista.innerHTML = `<div class="empty"><div class="ei">📂</div><p>Carpeta vacía.<br>Pulsa el área de arriba para subir el primer documento.</p></div>`;
+        return;
+      }
+      lista.innerHTML = files.map(f => {
+        const ext = String(f.nombre||'').split('.').pop().toUpperCase().substring(0,4);
+        const extColor = ext==='PDF'?'var(--danger)':['DOC','DOCX'].includes(ext)?'var(--info)':['XLS','XLSX'].includes(ext)?'var(--success)':'var(--muted)';
+        return `
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-family:var(--mono);color:${extColor};font-weight:500">${ext}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.nombre||'Sin nombre'}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${f.creado_en||''}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <a href="${f.url}" target="_blank" style="text-decoration:none">
+              <button class="btn btn-ghost btn-sm">👁️ Ver</button>
+            </a>
+            <button class="btn btn-danger btn-sm" onclick="eliminarDoc('${f.file_id}')">🗑️</button>
+          </div>
+        </div>`;
+      }).join('');
+    });
+}
+
+async function eliminarDoc(fileId) {
+  if (!confirm('¿Eliminar este documento de Drive?')) return;
+  showToast('🗑️ Eliminando…');
+  await api({ action:'deleteFile', fileId });
+  showToast('✅ Documento eliminado');
+  renderCarpeta(document.getElementById('mainContent'));
+}
+
+// ── FINANZAS ──
+function renderFinanzas(el) {
+  const totalIn  = PISOS.reduce((a,p)=>a+(Number(p.ingresos)||0), 0);
+  const totalOut = PISOS.reduce((a,p)=>a+(Number(p.gastos)||0), 0);
+  const neto     = totalIn - totalOut;
+  const activos  = PISOS.filter(p=>p.estado==='activo').length;
+  const mes      = new Date().toLocaleDateString('es-ES',{month:'long', year:'numeric'});
+
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}">${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+
+  let html = `
+    <div class="fin-cards">
+      <div class="fin-card">
+        <div class="label">Ingresos mes</div>
+        <div class="amount green">${fmt(totalIn)}</div>
+        <div class="trend">${activos} activo${activos!==1?'s':''}</div>
+      </div>
+      <div class="fin-card">
+        <div class="label">Gastos mes</div>
+        <div class="amount red">-${fmt(totalOut)}</div>
+        <div class="trend">mantenimiento + fijos</div>
+      </div>
+      <div class="fin-card">
+        <div class="label">Neto mes</div>
+        <div class="amount" style="color:${neto>=0?'var(--success)':'var(--danger)'}">${fmt(neto)}</div>
+        <div class="trend">${mes}</div>
+      </div>
+      <div class="fin-card">
+        <div class="label">Ocupación</div>
+        <div class="amount" style="font-size:22px">${PISOS.length>0?Math.round((activos/PISOS.length)*100):0}%</div>
+        <div class="trend">${activos} de ${PISOS.length}</div>
+      </div>
+    </div>
+
+    <div class="section-label">Registrar cobro de renta</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+      <div class="form-row-2" style="margin-bottom:10px">
+        <div>
+          <label class="form-label">Propiedad</label>
+          <select id="cobro_piso" class="form-input" style="padding:8px 10px;font-size:13px">${pisoOpts}</select>
+        </div>
+        <div>
+          <label class="form-label">Importe (€)</label>
+          <input id="cobro_importe" type="number" class="form-input" style="padding:8px 10px;font-size:13px" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:10px">
+        <div>
+          <label class="form-label">Fecha cobro</label>
+          <input id="cobro_fecha" type="date" class="form-input" style="padding:8px 10px;font-size:13px" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+        <div>
+          <label class="form-label">Concepto</label>
+          <input id="cobro_concepto" type="text" class="form-input" style="padding:8px 10px;font-size:13px" placeholder="Renta abril">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="registrarCobro()">
+        💶 Registrar cobro de renta
+      </button>
+    </div>
+
+    <div class="section-label">Rentabilidad por propiedad</div>`;
+
+  if (PISOS.length === 0) {
+    html += `<div class="empty"><div class="ei">💶</div><p>No hay propiedades registradas aún.</p></div>`;
+  } else {
+    PISOS.forEach(p => {
+      const ing    = Number(p.ingresos)||0;
+      const gas    = Number(p.gastos)||0;
+      const renta  = Number(p.renta)||0;
+      const neto_p = ing - gas;
+      const rentab = ing > 0 ? ((neto_p / ing) * 100).toFixed(1) : '—';
+      html += `
+      <div class="piso-card" style="margin-bottom:10px" onclick="openPiso('${p.id}')">
+        <div class="piso-header">
+          <div class="piso-icon ${p.tipo}">${p.ico}</div>
+          <div class="piso-info">
+            <div class="piso-name">${p.nombre}</div>
+            <div class="piso-addr">${p.dir}</div>
+          </div>
+          <span class="piso-badge ${p.estado==='activo'?'badge-activo':'badge-vacio'}">${p.inquilino||p.estado}</span>
+        </div>
+        <div class="piso-stats">
+          <div class="stat">
+            <div class="stat-val income">${fmt(ing)}</div>
+            <div class="stat-key">Ingresos</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val expense">-${fmt(gas)}</div>
+            <div class="stat-key">Gastos</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" style="color:${neto_p>=0?'var(--success)':'var(--danger)'}">${fmt(neto_p)}</div>
+            <div class="stat-key">Neto mes</div>
+          </div>
+        </div>
+        ${renta > 0 ? `
+        <div style="border-top:0.5px solid var(--border);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center">
+          <div>
+            <div style="font-size:13px;font-family:var(--mono);color:var(--accent)">${fmt(renta)}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Renta pactada</div>
+          </div>
+          <div style="border-left:0.5px solid var(--border)">
+            <div style="font-size:13px;font-family:var(--mono)">${fmt(neto_p*12)}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Neto anual</div>
+          </div>
+          <div style="border-left:0.5px solid var(--border)">
+            <div style="font-size:13px;font-family:var(--mono);color:var(--success)">${rentab}${rentab!=='—'?'%':''}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Rentab.</div>
+          </div>
+        </div>` : `
+        <div style="border-top:0.5px solid var(--border);padding:9px 14px">
+          <span style="font-size:11px;color:var(--muted)">Edita la propiedad para añadir la renta pactada y ver la rentabilidad</span>
+        </div>`}
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+async function registrarCobro() {
+  const pisoId   = document.getElementById('cobro_piso')?.value;
+  const importe  = parseFloat(document.getElementById('cobro_importe')?.value)||0;
+  const fecha    = document.getElementById('cobro_fecha')?.value || new Date().toISOString().split('T')[0];
+  const concepto = document.getElementById('cobro_concepto')?.value?.trim() || 'Renta';
+  if (!pisoId)          { showToast('⚠️ Selecciona una propiedad'); return; }
+  if (importe <= 0)     { showToast('⚠️ Introduce el importe recibido'); return; }
+  const idx = PISOS.findIndex(p=>p.id===pisoId);
+  if (idx === -1)       { showToast('⚠️ Propiedad no encontrada'); return; }
+  const piso = PISOS[idx];
+  PISOS[idx].ingresos = importe;
+  showToast('💾 Registrando cobro…');
+  await api({ action:'update', sheet:'Pisos', id:pisoId, data:{ ingresos:importe }});
+  await api({ action:'write', sheet:'Actividad', data:{
+    id:'act_'+Date.now(), piso_id:pisoId, tipo:'pago',
+    titulo:concepto+' · '+piso.nombre,
+    meta:'Cobrado '+fmt(importe)+' · '+fecha,
+    tag:'+'+fmt(importe), tag_clase:'green',
+    creado_en:new Date().toISOString(),
+  }});
+  ACTIVIDAD.unshift({ tipo:'pago', piso:pisoId, titulo:concepto, meta:fecha+' · '+piso.nombre, tag:'+'+fmt(importe), tagClass:'green' });
+  showToast('✅ Cobro de '+fmt(importe)+' registrado');
+  renderFinanzas(document.getElementById('mainContent'));
+}
+
+// ── INCIDENCIAS ──
+
+// ── DOCS (busqueda) ──
+function renderDocs(el) {
+  el.innerHTML = `
+    <div class="search-bar">
+      <span class="search-ico">🔍</span>
+      <input type="text" placeholder="Buscar documento…" oninput="filterDocs(this.value)">
+    </div>
+    <div class="section-label">Subir a propiedad</div>
+    <div id="pisoSelectList">
+    ${PISOS.map(p=>`
+      <div class="carpeta-row" style="margin-bottom:8px" onclick="openPiso('${p.id}')">
+        <span class="folder-ico">${p.ico}</span>
+        <div class="carpeta-info">
+          <div class="carpeta-name">${p.nombre}</div>
+          <div class="carpeta-count">${p.carpetas.length} carpetas · ${p.docs} docs</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUploadFor('${p.id}')">+ Doc</button>
+      </div>`).join('')}
+    </div>
+    <div class="section-label">Desde Gmail</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;font-size:13px;color:var(--muted);line-height:1.7">
+      📨 Abre Gmail → selecciona el correo → descarga el adjunto PDF → vuelve aquí y súbelo al piso correcto con el botón <strong style="color:var(--text)">+ Doc</strong>.
+      <br><br>
+      💡 <strong style="color:var(--text)">Truco:</strong> En Gmail crea un filtro por propiedad (ej: etiqueta "Delicias") para identificar correos rápido.
+    </div>`;
+}
+
+function filterDocs(v) { /* búsqueda local */ }
+
+// ── DRIVE ──
+function renderDrive(el) {
+  el.innerHTML = `
+    <div class="section-label">Estructura en Drive</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+      Crea esta estructura una vez en Drive. Luego enlaza cada carpeta aquí para acceso rápido.
+    </p>
+    ${PISOS.map(p=>`
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-family:var(--mono);color:var(--muted);margin-bottom:6px;letter-spacing:0.06em;text-transform:uppercase">${p.nombre}</div>
+      ${p.carpetas.map(c=>`
+      <div class="drive-link" onclick="openDriveFolderUrl('${p.id}','${c.id}')">
+        <span class="dl-ico">${c.ico}</span>
+        <div class="dl-info">
+          <div class="dl-name">${c.nombre}</div>
+          <div class="dl-path">📁 ${p.nombre.split(' ').slice(0,2).join('_')} / ${c.nombre}</div>
+        </div>
+        <span class="dl-arr">↗</span>
+      </div>`).join('')}
+    </div>`).join('')}
+    <div class="section-label">Configurar</div>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px" onclick="showToast('📋 Copia la estructura al portapapeles')">📋 Copiar estructura de carpetas</button>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="showSetupGuide()">📖 Guía de configuración</button>`;
+}
+
+function renderConfig(el) {
+  el.innerHTML = `
+    <div class="section-label">Gestión de propiedades</div>
+    ${PISOS.map(p=>`
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+        <span style="font-size:22px">${p.ico}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nombre}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${p.dir||'Sin dirección'}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" onclick="abrirFormPiso('${p.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmarEliminarPiso('${p.id}')">🗑️</button>
+        </div>
+      </div>
+      <div style="border-top:0.5px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr">
+        <div style="padding:8px 12px;text-align:center">
+          <div style="font-size:13px;font-family:var(--mono);color:var(--success)">${fmt(p.ingresos)}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px">Ingresos</div>
+        </div>
+        <div style="padding:8px 12px;text-align:center;border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)">
+          <div style="font-size:13px;font-family:var(--mono);color:var(--danger)">-${fmt(p.gastos)}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px">Gastos</div>
+        </div>
+        <div style="padding:8px 12px;text-align:center">
+          <div style="font-size:13px;font-family:var(--mono);color:${p.estado==='activo'?'var(--success)':'var(--muted)'}">${p.estado==='activo'?'Activo':'Vacío'}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px">Estado</div>
+        </div>
+      </div>
+    </div>`).join('')}
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="abrirFormPiso()">+ Nueva propiedad</button>
+
+    <div class="section-label" style="margin-top:24px">Conexión Google Sheets</div>
+    <div style="background:rgba(76,175,110,0.1);border:0.5px solid rgba(76,175,110,0.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">✅</span>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--success)">Conectado a Google Sheets</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Datos guardados automáticamente en tu Drive</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px" onclick="syncManual()">⟳ Sincronizar datos ahora</button>
+
+    <div class="section-label" style="margin-top:24px">App</div>
+    <div class="carpeta-row" onclick="showToast('📲 Safari/Chrome → Compartir → Añadir a pantalla inicio')">
+      <span class="folder-ico">📲</span>
+      <div class="carpeta-info">
+        <div class="carpeta-name">Instalar en móvil</div>
+        <div class="carpeta-count">Compartir → Añadir a pantalla de inicio</div>
+      </div>
+      <span style="color:var(--muted)">›</span>
+    </div>`;
+}
+
+// ── NAVIGATION ──
+function backToList() {
+  currentView = 'pisos';
+  currentPiso = null;
+  document.getElementById('pageTitle').textContent = 'Mis Propiedades';
+  document.getElementById('pageSubtitle').textContent = '3 activos · 2 ocupados';
+  document.getElementById('mainTabs').style.display = 'flex';
+  render();
+}
+
+function backToPiso() {
+  currentView = 'piso-detail';
+  render();
+}
+
+function setTab(el, view) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentView = view;
+  currentPiso = null;
+  document.getElementById('pageTitle').textContent = 'Mis Propiedades';
+  document.getElementById('pageSubtitle').textContent = '3 activos · 2 ocupados';
+  render();
+}
+
+function navTo(page) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('mainTabs').style.display = page==='home'?'flex':'none';
+  if (page==='home') { currentView='pisos'; backToList(); }
+  else if (page==='docs') { currentView='docs'; document.getElementById('pageTitle').textContent='Documentos'; document.getElementById('pageSubtitle').textContent='Subir y organizar'; render(); }
+  else if (page==='drive') { currentView='drive'; document.getElementById('pageTitle').textContent='Google Drive'; document.getElementById('pageSubtitle').textContent='Carpetas por propiedad'; render(); }
+  else if (page==='config') { currentView='config'; document.getElementById('pageTitle').textContent='Configuración'; document.getElementById('pageSubtitle').textContent='Propiedades & conexiones'; render(); }
+}
+
+// ── SHEET / MODAL ──
+function openSheet() {
+  const sheet = document.getElementById('sheet');
+  const backdrop = document.getElementById('sheetBackdrop');
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}">${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = 'Añadir a propiedad';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Propiedad</label>
+      <select id="sheetPisoSel" style="width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-family:var(--font);font-size:14px;outline:none">
+        ${pisoOpts}
+      </select>
+    </div>
+    <div class="sheet-grid">
+      <div class="sheet-opt" onclick="sheetUpload('pdf')">
+        <div class="ico">📄</div>
+        <div class="lbl">PDF / Doc</div>
+        <div class="sublbl">Contrato, factura…</div>
+      </div>
+      <div class="sheet-opt" onclick="sheetUpload('image')">
+        <div class="ico">📷</div>
+        <div class="lbl">Foto</div>
+        <div class="sublbl">Estado, incidencia…</div>
+      </div>
+      <div class="sheet-opt" onclick="sheetNota()">
+        <div class="ico">📝</div>
+        <div class="lbl">Nota</div>
+        <div class="sublbl">Comentario rápido</div>
+      </div>
+      <div class="sheet-opt" onclick="sheetIncidencia()">
+        <div class="ico">🔧</div>
+        <div class="lbl">Incidencia</div>
+        <div class="sublbl">Avería, problema…</div>
+      </div>
+      <div class="sheet-opt" onclick="sheetIngreso()">
+        <div class="ico">💶</div>
+        <div class="lbl">Ingreso</div>
+        <div class="sublbl">Renta, reserva…</div>
+      </div>
+      <div class="sheet-opt" onclick="sheetGasto()">
+        <div class="ico">🧾</div>
+        <div class="lbl">Gasto</div>
+        <div class="sublbl">Reparación, suministro…</div>
+      </div>
+    </div>`;
+  backdrop.classList.add('open');
+  sheet.classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('sheetBackdrop').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+}
+
+function sheetUpload(tipo) {
+  const accept = tipo==='image' ? 'image/*' : '.pdf,.doc,.docx,.xls,.xlsx';
+  const fi = document.getElementById('fileInput');
+  fi.accept = accept;
+  fi.click();
+  closeSheet();
+}
+
+function sheetNota() {
+  closeSheet();
+  const pid = selectedPisoForUpload || PISOS[0].id;
+  openNota(pid);
+}
+
+function sheetIncidencia() {
+  closeSheet();
+  showToast('🔧 Nueva incidencia registrada');
+}
+
+function sheetIngreso() {
+  closeSheet();
+  showToast('💶 Ingreso registrado');
+}
+
+function sheetGasto() {
+  closeSheet();
+  showToast('🧾 Gasto registrado');
+}
+
+function openUploadFor(pisoId) {
+  selectedPisoForUpload = pisoId;
+  document.getElementById('fileInput').accept = '*/*';
+  document.getElementById('fileInput').click();
+}
+
+function openNota(pisoId) {
+  if (currentView !== 'piso-detail') {
+    currentPiso = PISOS.find(p=>p.id===pisoId);
+    currentView = 'piso-detail';
+    render();
+  }
+  setTimeout(()=>{
+    const ta = document.getElementById('quickNota') || null;
+  }, 100);
+  showToast('📝 Escribe tu nota abajo');
+}
+
+function openIncidencia(pisoId) {
+  showToast('🔧 Incidencia creada');
+}
+
+
+function saveNota() {
+  const ta = document.getElementById('quickNota');
+  if (!ta || !ta.value.trim()) { showToast('⚠️ Escribe algo antes de guardar'); return; }
+  showToast('📝 Nota guardada en Drive');
+  ACTIVIDAD.unshift({tipo:'nota',piso:currentPiso.id,titulo:ta.value.substring(0,40),meta:'ahora mismo',tag:'NOTA',tagClass:'blue'});
+  ta.value = '';
+}
+
+function shareNota() {
+  const ta = document.getElementById('quickNota');
+  if (navigator.share && ta) {
+    navigator.share({ title:'Nota propiedad', text: ta.value });
+  } else {
+    showToast('📋 Copia el texto manualmente');
+  }
+}
+
+function openDriveFolder() {
+  showToast('☁️ Abriendo Drive…');
+}
+
+function openDriveFolderUrl(pid, cid) {
+  showToast('☁️ Abre esta carpeta en Drive');
+}
+
+function showSetupGuide() {
+  const backdrop = document.getElementById('sheetBackdrop');
+  const sheet = document.getElementById('sheet');
+  document.getElementById('sheetTitle').textContent = 'Configurar Drive';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="font-size:13px;line-height:1.8;color:var(--muted)">
+      <div style="color:var(--text);font-weight:500;margin-bottom:10px">Estructura de carpetas a crear en Drive:</div>
+      <div style="font-family:var(--mono);font-size:12px;background:var(--surface2);border-radius:var(--radius-sm);padding:14px;line-height:2">
+📁 Cartera Inmobiliaria/<br>
+&nbsp;&nbsp;📁 Apt. Turístico Casco Viejo/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Contratos & Reservas<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Facturación<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Gastos & Suministros<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Incidencias<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Documentación Legal<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Fotos<br>
+&nbsp;&nbsp;📁 Piso Residencial Delicias/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Contrato Arrendamiento<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Inquilinos<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Pagos & Recibos<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 IPC & Actualizaciones<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Gastos<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Suministros<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Incidencias<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Certificados & Legal<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Fotos Estado Piso<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Comunicaciones<br>
+&nbsp;&nbsp;📁 Local Oficina Gran Vía/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Escrituras & Registro<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 ITE & Comunidad<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Gastos Comunidad<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Suministros<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Candidatos Inquilinos<br>
+&nbsp;&nbsp;&nbsp;&nbsp;📁 Fotos
+      </div>
+      <div style="margin-top:14px;color:var(--text)">Paso a paso:</div>
+      <div style="margin-top:8px">
+        1. Crea esta estructura en <strong style="color:var(--text)">Google Drive</strong><br>
+        2. En Gmail, crea etiquetas por piso<br>
+        3. Añade esta web a tu <strong style="color:var(--text)">pantalla de inicio</strong><br>
+        4. Usa el botón <strong style="color:var(--accent)">+</strong> para subir desde el móvil
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px" onclick="copyStructure()">📋 Copiar estructura</button>`;
+  backdrop.classList.add('open');
+  sheet.classList.add('open');
+}
+
+function copyStructure() {
+  const txt = `📁 Cartera Inmobiliaria/
+  📁 Apt. Turístico Casco Viejo/
+    📁 Contratos & Reservas
+    📁 Facturación
+    📁 Gastos & Suministros
+    📁 Incidencias
+    📁 Documentación Legal
+    📁 Fotos
+  📁 Piso Residencial Delicias/
+    📁 Contrato Arrendamiento
+    📁 Inquilinos
+    📁 Pagos & Recibos
+    📁 IPC & Actualizaciones
+    📁 Gastos
+    📁 Suministros
+    📁 Incidencias
+    📁 Certificados & Legal
+    📁 Fotos Estado Piso
+    📁 Comunicaciones
+  📁 Local Oficina Gran Vía/
+    📁 Escrituras & Registro
+    📁 ITE & Comunidad
+    📁 Gastos Comunidad
+    📁 Suministros
+    📁 Candidatos Inquilinos
+    📁 Fotos`;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt);
+  showToast('✅ Estructura copiada al portapapeles');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ── FIANZAS DATA ──
+const FIANZAS = [];
+
+let expandedFianza = null;
+
+function getFianzaProgress(f) {
+  const done = f.pasos.filter(p=>p.hecho).length;
+  return { done, total: f.pasos.length, pct: Math.round((done/f.pasos.length)*100) };
+}
+
+function toggleFianzaStep(fid, sid) {
+  const f = FIANZAS.find(x=>x.id===fid);
+  const s = f.pasos.find(x=>x.id===sid);
+  s.hecho = !s.hecho;
+  s.fechaHecho = s.hecho ? new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : null;
+  renderFianzas(document.getElementById('mainContent'));
+  showToast(s.hecho ? '✅ Paso completado' : '↩ Paso desmarcado');
+}
+
+function toggleFianzaExpand(fid) {
+  expandedFianza = expandedFianza === fid ? null : fid;
+  renderFianzas(document.getElementById('mainContent'));
+}
+
+function openNuevaFianza(tipo) {
+  closeSheet();
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}">${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = tipo==='deposito' ? '📥 Nuevo depósito de fianza' : '📤 Nueva devolución de fianza';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="form-label">Propiedad</label>
+        <select id="nf_piso" class="form-input">${pisoOpts}</select>
+      </div>
+      <div>
+        <label class="form-label">Inquilino / Nombre</label>
+        <input id="nf_inquilino" type="text" class="form-input" placeholder="Nombre del inquilino">
+      </div>
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Importe (€)</label>
+          <input id="nf_importe" type="number" class="form-input" placeholder="750">
+        </div>
+        <div>
+          <label class="form-label">Fecha inicio</label>
+          <input id="nf_fecha" type="date" class="form-input">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Nº Expediente DGA (si ya lo tienes)</label>
+        <input id="nf_exp" type="text" class="form-input" placeholder="ARA-20XX-XXXXX">
+      </div>
+      ${htmlAdjunto('nf','Adjuntar contrato u otros documentos')}
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="guardarNuevaFianza('${tipo}')">
+        💾 Crear proceso de ${tipo === 'deposito' ? 'depósito' : 'devolución'}
+      </button>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+async function guardarNuevaFianza(tipo) {
+  const inquilino = document.getElementById('nf_inquilino')?.value?.trim();
+  if (!inquilino) { showToast('⚠️ El nombre del inquilino es obligatorio'); return; }
+  const pisoId  = document.getElementById('nf_piso').value;
+  const importe = parseFloat(document.getElementById('nf_importe').value) || 0;
+  const fecha   = document.getElementById('nf_fecha').value;
+  const exp     = document.getElementById('nf_exp')?.value?.trim() || null;
+
+  closeSheet();
+  showToast('💾 Guardando fianza…');
+
+  const id = 'f_' + Date.now();
+  // Pasos por defecto según tipo
+  const pasos = tipo === 'deposito' ? [
+    { id:'s1', titulo:'Firma del contrato de arrendamiento', meta:'Contrato firmado por ambas partes', plazo:'Día 0', doc:true, hecho:false, fechaHecho:null },
+    { id:'s2', titulo:'Cobro de la fianza al inquilino', meta:`${importe} €`, plazo:'Día 0', doc:false, hecho:false, fechaHecho:null },
+    { id:'s3', titulo:'Cumplimentar impreso de depósito DGA', meta:'Modelo oficial Aragón', plazo:'≤ 30 días', doc:true, hecho:false, fechaHecho:null },
+    { id:'s4', titulo:'Ingreso en entidad colaboradora (Ibercaja/CAI)', meta:'Guardar justificante bancario', plazo:'≤ 30 días', doc:true, hecho:false, fechaHecho:null },
+    { id:'s5', titulo:'Presentación en Registro de Fianzas DGA', meta:'Impreso + justificante bancario', plazo:'≤ 30 días', doc:true, hecho:false, fechaHecho:null },
+    { id:'s6', titulo:'Recepción del resguardo de depósito', meta:'PDF con nº de expediente', plazo:'Tras presentación', doc:true, hecho:false, fechaHecho:null },
+    { id:'s7', titulo:'Entrega de copia del resguardo al inquilino', meta:'El inquilino debe tener el justificante', plazo:'Tras recepción', doc:false, hecho:false, fechaHecho:null },
+    { id:'s8', titulo:'Archivar documentación en Drive', meta:'Contrato + impreso + resguardo DGA', plazo:'Completado', doc:false, hecho:false, fechaHecho:null },
+  ] : [
+    { id:'d1', titulo:'Inspección del piso y entrega de llaves', meta:'Acta + fotos firmada por ambas partes', plazo:'Día salida', doc:true, hecho:false, fechaHecho:null },
+    { id:'d2', titulo:'Lectura y comunicación de contadores', meta:'Luz, agua, gas', plazo:'Día salida', doc:false, hecho:false, fechaHecho:null },
+    { id:'d3', titulo:'Valoración de desperfectos si los hay', meta:'Presupuesto y notificación escrita', plazo:'≤ 10 días', doc:true, hecho:false, fechaHecho:null },
+    { id:'d4', titulo:'Solicitud de cancelación a la DGA', meta:'Impreso + nº expediente + IBAN inquilino', plazo:'≤ 1 mes', doc:true, hecho:false, fechaHecho:null },
+    { id:'d5', titulo:'Resolución DGA y transferencia al inquilino', meta:'Plazo legal: 1 mes desde solicitud', plazo:'≤ 1 mes', doc:true, hecho:false, fechaHecho:null },
+    { id:'d6', titulo:'Confirmación de recepción del inquilino', meta:'Email o mensaje confirmando el cobro', plazo:'Tras transferencia', doc:false, hecho:false, fechaHecho:null },
+    { id:'d7', titulo:'Archivar documentación en Drive', meta:'Resolución DGA + confirmación inquilino', plazo:'Cierre', doc:false, hecho:false, fechaHecho:null },
+  ];
+
+  const nuevaFianza = { id, pisoId, tipo, inquilino, importe, fechaInicio: fecha, numExpediente: exp, pasos, docs: [] };
+  FIANZAS.push(nuevaFianza);
+
+  // Guardar en Sheets
+  await api({ action:'write', sheet:'Fianzas', data:{
+    id, piso_id: pisoId, tipo, inquilino, importe, fecha_inicio: fecha,
+    num_expediente: exp || '', creado_en: new Date().toISOString().split('T')[0]
+  }});
+  // Guardar pasos
+  for (let i = 0; i < pasos.length; i++) {
+    const p = pasos[i];
+    await api({ action:'write', sheet:'Fianza_Pasos', data:{
+      id: p.id, fianza_id: id, titulo: p.titulo, meta: p.meta,
+      plazo: p.plazo, requiere_doc: p.doc, hecho: false, fecha_hecho: '', orden: i
+    }});
+  }
+
+  showToast(`✅ Fianza creada · ${pasos.length} pasos del checklist listos`);
+
+  // Subir documentos adjuntos si se seleccionaron
+  const piso = PISOS.find(p=>p.id===pisoId);
+  await subirAdjuntos('nf', pisoId, piso?.nombre, 'Fianzas');
+
+  renderFianzas(document.getElementById('mainContent'));
+}
+
+function renderFianzas(el) {
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div class="fianza-nueva-btn" onclick="openNuevaFianza('deposito')">
+        <div class="ico">📥</div>
+        <div class="lbl">Nuevo depósito</div>
+        <div class="sub">Nuevo contrato</div>
+      </div>
+      <div class="fianza-nueva-btn" onclick="openNuevaFianza('devolucion')">
+        <div class="ico">📤</div>
+        <div class="lbl">Devolución</div>
+        <div class="sub">Fin de contrato</div>
+      </div>
+    </div>
+    <div class="section-label">Procesos activos</div>`;
+
+  if (FIANZAS.length === 0) {
+    html += `<div class="empty"><div class="ei">🏦</div><p>No hay fianzas registradas aún.<br>Pulsa uno de los botones de arriba para empezar.</p></div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  FIANZAS.forEach(f => {
+    const { done, total, pct } = getFianzaProgress(f);
+    const isExpanded = expandedFianza === f.id;
+    const isDone = pct === 100;
+    const p = PISOS.find(x => x.id === f.pisoId);
+    const pisoLabel = p ? `${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}` : '🏠 Propiedad';
+    const pillClass = isDone ? 'done' : f.tipo;
+    const pillText  = isDone ? 'Completado' : f.tipo === 'deposito' ? 'Depósito' : 'Devolución';
+    const fillClass = isDone ? 'fill-done' : f.tipo === 'deposito' ? 'fill-deposito' : 'fill-devolucion';
+
+    html += `<div class="fianza-card">
+      <div class="fianza-card-header" onclick="toggleFianzaExpand('${f.id}')">
+        <div style="font-size:20px">${f.tipo==='deposito'?'📥':'📤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500">${f.inquilino||'Sin nombre'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${pisoLabel} · ${fmt(f.importe)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <span class="fianza-pill ${pillClass}">${pillText}</span>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)">${done}/${total} pasos</div>
+        </div>
+        <div style="color:var(--muted);font-size:14px;margin-left:8px;transition:transform 0.2s;transform:rotate(${isExpanded?'90':'0'}deg)">›</div>
+      </div>
+      <div class="fianza-progress-bar">
+        <div class="fianza-progress-fill ${fillClass}" style="width:${pct}%"></div>
+      </div>`;
+
+    if (isExpanded) {
+      // Documentos adjuntos de la fianza
+      const docs = f.docs || [];
+      html += `<div style="padding:0 14px 10px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Documentos adjuntos</div>`;
+      if (docs.length > 0) {
+        docs.forEach(doc => {
+          html += `<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px">📄</span>
+            <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--success)">${doc.name}</span>
+            <a href="${doc.url}" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">👁️ Ver</button></a>
+          </div>`;
+        });
+      } else {
+        html += `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Sin documentos adjuntos aún</div>`;
+      }
+      html += `<button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="event.stopPropagation();subirDocFianza('${f.id}')">📎 Adjuntar documento</button>
+      </div>`;
+
+      html += `<div class="fianza-steps">`;
+      f.pasos.forEach((s, idx) => {
+        const isLast = idx === f.pasos.length - 1;
+        const prevDone = idx === 0 || f.pasos[idx-1].hecho;
+        html += `
+        <div class="step-item">
+          <div class="step-left">
+            <div class="step-check ${s.hecho?'done':prevDone?'active':'blocked-step'}"
+              onclick="${s.hecho||prevDone?`toggleFianzaStep('${f.id}','${s.id}')`:'showToast(\"⚠️ Completa el paso anterior primero\")'}"
+              title="${s.hecho?'Marcar como pendiente':'Marcar como completado'}">
+              ${s.hecho?'':''}
+            </div>
+            ${!isLast?`<div class="step-line ${s.hecho?'done':''}"></div>`:''}
+          </div>
+          <div class="step-body">
+            <div class="step-title ${s.hecho?'done-text':''}">
+              ${s.titulo}
+              <span class="step-date-badge ${s.hecho?'ok':''}">${s.hecho?s.fechaHecho:s.plazo}</span>
+            </div>
+            <div class="step-meta">${s.meta}</div>
+            ${s.hecho?'':s.doc?`<div class="step-actions"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileInput').click()">📎 Adjuntar PDF</button></div>`:''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+
+      if (f.numExpediente) {
+        html += `<div style="padding:0 16px 12px"><div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px"><span style="color:var(--muted)">Nº expediente DGA: </span><span style="font-family:var(--mono);color:var(--accent)">${f.numExpediente}</span></div></div>`;
+      }
+    }
+
+    html += `<div class="fianza-summary">
+      <div class="fsumm-item">
+        <div class="fsumm-val" style="color:var(--accent)">${fmt(f.importe)}</div>
+        <div class="fsumm-key">Importe</div>
+      </div>
+      <div class="fsumm-item">
+        <div class="fsumm-val">${pct}%</div>
+        <div class="fsumm-key">Progreso</div>
+      </div>
+      <div class="fsumm-item" style="cursor:pointer" onclick="editarFianza('${f.id}')">
+        <div class="fsumm-val">✏️</div>
+        <div class="fsumm-key">Editar</div>
+      </div>
+    </div></div>`;
+  });
+
+  // Leyenda informativa
+  html += `
+    <div class="section-label" style="margin-top:8px">Plazos legales (Aragón)</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;font-size:12px;line-height:1.9;color:var(--muted)">
+      <div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--accent);font-family:var(--mono)">30 días</span> Para depositar la fianza en la DGA desde la firma del contrato</div>
+      <div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--info);font-family:var(--mono)">1 mes</span> Plazo máximo para devolver la fianza al inquilino (LAU art. 36)</div>
+      <div style="display:flex;gap:8px"><span style="color:var(--danger);font-family:var(--mono)">Sanción</span> El incumplimiento conlleva intereses de demora + posible sanción administrativa</div>
+    </div>`;
+
+  el.innerHTML = html;
+}
+
+// ── SUMINISTROS DATA ──
+const PASOS_ALTA = [
+  {
+    id: 'a1', titulo: 'Lectura del contador en la entrega de llaves',
+    meta: 'Anotar número de contador y lectura exacta · Fotografiar el contador con fecha visible',
+    plazo: 'Día entrada', doc: true
+  },
+  {
+    id: 'a2', titulo: 'Solicitar cambio de titularidad a la comercializadora',
+    meta: 'Llamada o gestión online con datos del nuevo titular (DNI, IBAN, dirección) · También se puede hacer con el contrato de arrendamiento como justificante',
+    plazo: '≤ 5 días', doc: false
+  },
+  {
+    id: 'a3', titulo: 'Subir contrato de suministro firmado',
+    meta: 'PDF del nuevo contrato a nombre del inquilino · Guardar número de contrato y CUPS/CUA',
+    plazo: 'Tras solicitud', doc: true
+  },
+  {
+    id: 'a4', titulo: 'Confirmar primera factura a nombre del inquilino',
+    meta: 'Verificar que la factura refleja el nuevo titular · Periodo de lectura desde fecha de entrada',
+    plazo: '≈ 30-60 días', doc: true
+  },
+  {
+    id: 'a5', titulo: 'Archivar documentación en Drive (carpeta Suministros)',
+    meta: 'Contrato nuevo + primera factura + foto contador en carpeta del piso',
+    plazo: 'Completado', doc: false
+  }
+];
+
+const PASOS_BAJA = [
+  {
+    id: 'b1', titulo: 'Lectura del contador en la entrega de llaves',
+    meta: 'Anotar lectura final · Fotografiar contador · Firmar acta de salida con el inquilino',
+    plazo: 'Día salida', doc: true
+  },
+  {
+    id: 'b2', titulo: 'Notificar baja/cambio de titular a la comercializadora',
+    meta: 'Comunicar fecha de baja del inquilino · Indicar si el arrendador quiere quedar como titular',
+    plazo: '≤ 3 días', doc: false
+  },
+  {
+    id: 'b3', titulo: 'Liquidación de la última factura del inquilino',
+    meta: 'Factura proporcional al período hasta la fecha de baja · Comprobar que queda saldada',
+    plazo: '≈ 15-30 días', doc: true
+  },
+  {
+    id: 'b4', titulo: 'Contrato a nombre del arrendador (piso vacío) o nuevo inquilino',
+    meta: 'Si el piso queda vacío: contrato mínimo en nombre propio para no cortar el suministro · Si hay nuevo inquilino: iniciar alta directamente',
+    plazo: 'Inmediato', doc: true
+  },
+  {
+    id: 'b5', titulo: 'Archivar última factura y confirmación de baja en Drive',
+    meta: 'Factura final + confirmación de baja de la comercializadora en carpeta Suministros',
+    plazo: 'Completado', doc: false
+  }
+];
+
+const SUMINISTROS = [];
+
+let expandedSumi = 'su1';
+
+function getSumiProgress(s, tipo) {
+  const steps = tipo === 'alta' ? s.altaSteps : s.bajaSteps;
+  const done = steps.filter(x=>x.hecho).length;
+  return { done, total: steps.length, pct: Math.round((done/steps.length)*100) };
+}
+
+function toggleSumiExpand(id) {
+  expandedSumi = expandedSumi === id ? null : id;
+  renderSuministros(document.getElementById('mainContent'));
+}
+
+function setSumiTab(id, tab) {
+  const s = SUMINISTROS.find(x=>x.id===id);
+  s.tabActiva = tab;
+  renderSuministros(document.getElementById('mainContent'));
+}
+
+function toggleSumiStep(sid, tipo, stepId) {
+  const s = SUMINISTROS.find(x=>x.id===sid);
+  const steps = tipo === 'alta' ? s.altaSteps : s.bajaSteps;
+  const step = steps.find(x=>x.id===stepId);
+  const idx = steps.indexOf(step);
+  const prevDone = idx === 0 || steps[idx-1].hecho;
+  if (!step.hecho && !prevDone) { showToast('⚠️ Completa el paso anterior primero'); return; }
+  step.hecho = !step.hecho;
+  step.fechaHecho = step.hecho ? new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : null;
+  renderSuministros(document.getElementById('mainContent'));
+  showToast(step.hecho ? '✅ Paso completado' : '↩ Desmarcado');
+}
+
+function renderSumiSteps(sid, tipo) {
+  const s = SUMINISTROS.find(x=>x.id===sid);
+  const steps = tipo === 'alta' ? s.altaSteps : s.bajaSteps;
+  let html = '<div class="sumi-steps-wrap">';
+  steps.forEach((step, idx) => {
+    const isLast = idx === steps.length - 1;
+    const prevDone = idx === 0 || steps[idx-1].hecho;
+    html += `
+    <div class="step-item">
+      <div class="step-left">
+        <div class="step-check ${step.hecho?'done':prevDone?'active':'blocked-step'}"
+          onclick="toggleSumiStep('${sid}','${tipo}','${step.id}')"></div>
+        ${!isLast?`<div class="step-line ${step.hecho?'done':''}"></div>`:''}
+      </div>
+      <div class="step-body">
+        <div class="step-title ${step.hecho?'done-text':''}">
+          ${step.titulo}
+          <span class="step-date-badge ${step.hecho?'ok':''}">${step.hecho?step.fechaHecho:step.plazo}</span>
+        </div>
+        <div class="step-meta">${step.meta}</div>
+        ${!step.hecho && step.doc ? `<div class="step-actions"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileInput').click()">📎 Adjuntar</button></div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function openNuevoSuministro() {
+  closeSheet();
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}">${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = '⚡ Nuevo suministro';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="form-label">Propiedad</label>
+        <select id="ns_piso" class="form-input">${pisoOpts}</select>
+      </div>
+      <div>
+        <label class="form-label">Tipo de suministro</label>
+        <select id="ns_tipo" class="form-input">
+          <option value="luz">⚡ Electricidad (Luz)</option>
+          <option value="agua">💧 Agua</option>
+          <option value="gas">🔥 Gas natural</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Comercializadora</label>
+        <input id="ns_comercial" type="text" class="form-input" placeholder="Endesa, Naturgy, Iberdrola, Aguas Zaragoza…">
+      </div>
+      <div>
+        <label class="form-label">Titular / Inquilino</label>
+        <input id="ns_titular" type="text" class="form-input" placeholder="Nombre del titular del contrato">
+      </div>
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">CUPS / Referencia</label>
+          <input id="ns_cups" type="text" class="form-input" placeholder="ES0021…" style="font-family:var(--mono)">
+        </div>
+        <div>
+          <label class="form-label">Fecha de alta</label>
+          <input id="ns_fecha" type="date" class="form-input">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Potencia / Tarifa</label>
+        <input id="ns_tarifa" type="text" class="form-input" placeholder="3,45 kW · 2.0TD">
+      </div>
+      ${htmlAdjunto('ns','Adjuntar contrato de suministro u otros')}
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="guardarNuevoSuministro()">
+        💾 Crear suministro y activar checklist
+      </button>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+async function guardarNuevoSuministro() {
+  const comercial = document.getElementById('ns_comercial')?.value?.trim();
+  if (!comercial) { showToast('⚠️ La comercializadora es obligatoria'); return; }
+
+  const pisoId  = document.getElementById('ns_piso').value;
+  const tipo    = document.getElementById('ns_tipo').value;
+  const titular = document.getElementById('ns_titular').value.trim();
+  const cups    = document.getElementById('ns_cups').value.trim();
+  const fecha   = document.getElementById('ns_fecha').value;
+  const tarifa  = document.getElementById('ns_tarifa').value.trim();
+
+  closeSheet();
+  showToast('💾 Guardando suministro…');
+
+  const PASOS_ALTA = [
+    { id:'a1', titulo:'Lectura del contador en la entrega de llaves', meta:'Fotografiar contador con fecha visible', plazo:'Día entrada', doc:true, hecho:false, fechaHecho:null },
+    { id:'a2', titulo:'Solicitar cambio de titularidad a la comercializadora', meta:'DNI, IBAN y dirección del nuevo titular', plazo:'≤ 5 días', doc:false, hecho:false, fechaHecho:null },
+    { id:'a3', titulo:'Subir contrato de suministro firmado', meta:`PDF a nombre de ${titular||'inquilino'} · Guardar nº contrato y CUPS`, plazo:'Tras solicitud', doc:true, hecho:false, fechaHecho:null },
+    { id:'a4', titulo:'Confirmar primera factura a nombre del inquilino', meta:'Verificar que el titular es correcto', plazo:'≈ 30-60 días', doc:true, hecho:false, fechaHecho:null },
+    { id:'a5', titulo:'Archivar documentación en Drive', meta:'Contrato + primera factura + foto contador', plazo:'Completado', doc:false, hecho:false, fechaHecho:null },
+  ];
+  const PASOS_BAJA = [
+    { id:'b1', titulo:'Lectura del contador en la entrega de llaves', meta:'Fotografiar · Firmar acta de salida', plazo:'Día salida', doc:true, hecho:false, fechaHecho:null },
+    { id:'b2', titulo:'Notificar baja/cambio de titular a la comercializadora', meta:'Comunicar fecha de baja del inquilino', plazo:'≤ 3 días', doc:false, hecho:false, fechaHecho:null },
+    { id:'b3', titulo:'Liquidación de la última factura', meta:'Comprobar que queda saldada', plazo:'≈ 15-30 días', doc:true, hecho:false, fechaHecho:null },
+    { id:'b4', titulo:'Contrato a nombre del arrendador o nuevo inquilino', meta:'Evitar corte del suministro', plazo:'Inmediato', doc:true, hecho:false, fechaHecho:null },
+    { id:'b5', titulo:'Archivar última factura y confirmación de baja', meta:'Factura final en carpeta Suministros de Drive', plazo:'Completado', doc:false, hecho:false, fechaHecho:null },
+  ];
+
+  const EMOJIS = { luz:'⚡', agua:'💧', gas:'🔥' };
+  const LABELS = { luz:'Electricidad', agua:'Agua', gas:'Gas natural' };
+
+  const id = 'su_' + Date.now();
+  const nuevo = {
+    id, pisoId, tipo, emoji: EMOJIS[tipo], label: LABELS[tipo],
+    comercializadora: comercial, inquilino: titular, cups, tarifa,
+    potencia: tarifa, fechaAlta: fecha,
+    tabActiva: 'alta',
+    altaSteps: PASOS_ALTA.map(p => ({ ...p })),
+    bajaSteps: PASOS_BAJA.map(p => ({ ...p })),
+    docs: [],
+  };
+
+  SUMINISTROS.push(nuevo);
+
+  // Guardar en Sheets
+  await api({ action:'write', sheet:'Suministros', data:{
+    id, piso_id: pisoId, tipo, comercializadora: comercial,
+    inquilino: titular, cups, tarifa, potencia: tarifa,
+    fecha_alta: fecha, creado_en: new Date().toISOString().split('T')[0]
+  }});
+  // Guardar pasos de alta y baja
+  for (let i = 0; i < PASOS_ALTA.length; i++) {
+    const p = PASOS_ALTA[i];
+    await api({ action:'write', sheet:'Suministro_Pasos', data:{
+      id: p.id, suministro_id: id, proceso:'alta', titulo:p.titulo,
+      meta:p.meta, plazo:p.plazo, requiere_doc:p.doc, hecho:false, fecha_hecho:'', orden:i
+    }});
+  }
+  for (let i = 0; i < PASOS_BAJA.length; i++) {
+    const p = PASOS_BAJA[i];
+    await api({ action:'write', sheet:'Suministro_Pasos', data:{
+      id: p.id, suministro_id: id, proceso:'baja', titulo:p.titulo,
+      meta:p.meta, plazo:p.plazo, requiere_doc:p.doc, hecho:false, fecha_hecho:'', orden:i
+    }});
+  }
+
+  showToast(`✅ ${LABELS[tipo]} creado · Checklist de alta y baja activados`);
+
+  // Subir documentos adjuntos si se seleccionaron
+  await subirAdjuntos('ns', pisoId, nuevo.comercializadora ? `${nuevo.label} (${nuevo.comercializadora})` : nuevo.label, 'Suministros');
+
+  renderSuministros(document.getElementById('mainContent'));
+}
+
+function renderSuministros(el) {
+  const tipoClass = {luz:'sumi-luz', agua:'sumi-agua', gas:'sumi-gas'};
+  let html = `
+    <div class="sumi-nueva-btn" onclick="openNuevoSuministro()">
+      <span class="sni">⚡</span>
+      <div>
+        <div class="snl">Nuevo suministro</div>
+        <div class="sns">Luz · Agua · Gas · activa checklist de alta/baja</div>
+      </div>
+    </div>
+    <div class="section-label">Suministros activos</div>`;
+
+  if (SUMINISTROS.length === 0) {
+    html += `<div class="empty"><div class="ei">⚡</div><p>No hay suministros registrados aún.<br>Pulsa "Nuevo suministro" para añadir uno.</p></div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  SUMINISTROS.forEach(s => {
+    const isExp = expandedSumi === s.id;
+    const p = PISOS.find(x => x.id === s.pisoId);
+    if (!p) return; // skip si el piso no existe
+    const { done: da, total: ta, pct: pa } = getSumiProgress(s,'alta');
+    const { done: db, total: tb, pct: pb } = getSumiProgress(s,'baja');
+    const altaDone = pa === 100;
+    const bajaDone = pb === 100;
+
+    html += `<div class="sumi-card">
+      <div class="sumi-header" onclick="toggleSumiExpand('${s.id}')">
+        <div class="sumi-ico-wrap ${tipoClass[s.tipo]}">${s.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500">${s.label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')} · ${s.comercializadora}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <span class="sumi-tipo-pill ${altaDone?'done':'alta'}">Alta ${pa}%</span>
+          ${db>0?`<br><span class="sumi-tipo-pill ${bajaDone?'done':'baja'}" style="margin-top:4px;display:inline-block">Baja ${pb}%</span>`:''}
+        </div>
+        <div style="color:var(--muted);font-size:14px;margin-left:8px;transition:transform 0.2s;transform:rotate(${isExp?'90':'0'}deg)">›</div>
+      </div>`;
+
+    // progress bars
+    html += `<div style="padding:0 16px 10px;display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--muted);width:28px;font-family:var(--mono)">Alta</span>
+        <div style="flex:1;height:3px;background:var(--surface2);border-radius:2px">
+          <div style="width:${pa}%;height:100%;border-radius:2px;background:var(--accent);transition:width 0.4s"></div>
+        </div>
+        <span style="font-size:10px;color:var(--muted);font-family:var(--mono);width:28px;text-align:right">${da}/${ta}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--muted);width:28px;font-family:var(--mono)">Baja</span>
+        <div style="flex:1;height:3px;background:var(--surface2);border-radius:2px">
+          <div style="width:${pb}%;height:100%;border-radius:2px;background:var(--info);transition:width 0.4s"></div>
+        </div>
+        <span style="font-size:10px;color:var(--muted);font-family:var(--mono);width:28px;text-align:right">${db}/${tb}</span>
+      </div>
+    </div>`;
+
+    if (isExp) {
+      // Documentos adjuntos del suministro
+      const docs = s.docs || [];
+      html += `<div style="padding:0 14px 10px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Documentos adjuntos</div>`;
+      if (docs.length > 0) {
+        docs.forEach(doc => {
+          html += `<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px">📄</span>
+            <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--success)">${doc.name}</span>
+            <a href="${doc.url}" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">👁️ Ver</button></a>
+          </div>`;
+        });
+      } else {
+        html += `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Sin documentos adjuntos aún</div>`;
+      }
+      html += `<button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="event.stopPropagation();subirDocSuministro('${s.id}')">📎 Adjuntar documento</button>
+      </div>`;
+
+      // Datos contrato
+      html += `<div class="sumi-contrato-box">
+        <div class="scl">Referencia del contrato</div>
+        <div class="scv">${s.cups}</div>
+        ${s.potencia?`<div class="scl" style="margin-top:6px">Potencia / Tarifa</div><div class="scv">${s.potencia} · ${s.tarifaAcceso}</div>`:''}
+        <div class="scl" style="margin-top:6px">Titular · Fecha alta</div>
+        <div class="scv">${s.inquilino} · ${s.fechaAlta}</div>
+      </div>`;
+
+      // Tabs alta / baja
+      html += `<div class="sumi-tabs">
+        <div class="sumi-tab ${s.tabActiva==='alta'?'active':''}" onclick="setSumiTab('${s.id}','alta')">📥 Proceso de alta</div>
+        <div class="sumi-tab ${s.tabActiva==='baja'?'active':''}" onclick="setSumiTab('${s.id}','baja')">📤 Proceso de baja</div>
+      </div>`;
+
+      html += renderSumiSteps(s.id, s.tabActiva);
+    }
+
+    // Fila inferior resumen
+    html += `<div class="fianza-summary">
+      <div class="fsumm-item">
+        <div class="fsumm-val" style="color:var(--accent)">${pa}%</div>
+        <div class="fsumm-key">Alta</div>
+      </div>
+      <div class="fsumm-item">
+        <div class="fsumm-val" style="color:var(--info)">${pb}%</div>
+        <div class="fsumm-key">Baja</div>
+      </div>
+      <div class="fsumm-item" style="cursor:pointer" onclick="editarSuministro('${s.id}')">
+        <div class="fsumm-val">✏️</div>
+        <div class="fsumm-key">Editar</div>
+      </div>
+    </div></div>`;
+  });
+
+  html += `
+    <div class="section-label" style="margin-top:8px">Consejos clave</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;font-size:12px;line-height:1.9;color:var(--muted)">
+      <div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--accent);font-family:var(--mono)">CUPS</span> Código único del punto de suministro · Está en cualquier factura anterior</div>
+      <div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--info);font-family:var(--mono)">Foto</span> Fotografiar siempre el contador al inicio y al fin de cada contrato</div>
+      <div style="display:flex;gap:8px"><span style="color:var(--success);font-family:var(--mono)">Drive</span> Guardar cada contrato de suministro en 📁 Suministros del piso correspondiente</div>
+    </div>`;
+
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// ── MÓDULO: CONTRATO NUEVO ──
+// ══════════════════════════════════════════
+const CONTRATOS_CHECKLIST = [];
+
+let expandedContrato = null;
+
+function toggleContratoStep(cid, stepId) {
+  const c = CONTRATOS_CHECKLIST.find(x=>x.id===cid);
+  let step = null;
+  let stepIdx = 0, prevDone = true;
+  c.fases.forEach(f => {
+    f.pasos.forEach((p, i) => {
+      if (p.id === stepId) { step = p; stepIdx = i; }
+    });
+  });
+  if (!step) return;
+  step.hecho = !step.hecho;
+  step.fechaHecho = step.hecho ? new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : null;
+  renderContrato(document.getElementById('mainContent'));
+  showToast(step.hecho ? '✅ Paso completado' : '↩ Desmarcado');
+}
+
+function toggleContratoExpand(id) {
+  expandedContrato = expandedContrato === id ? null : id;
+  renderContrato(document.getElementById('mainContent'));
+}
+
+function renderContrato(el) {
+  let html = `
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:16px" onclick="abrirFormContrato('')">
+      + Nuevo contrato
+    </button>
+    <div class="section-label">Procesos activos</div>`;
+
+  if (CONTRATOS_CHECKLIST.length === 0) {
+    html += `<div class="empty"><div class="ei">📋</div><p>No hay contratos registrados aún.<br>Pulsa el botón de arriba para empezar.</p></div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  CONTRATOS_CHECKLIST.forEach(c => {
+    const allSteps = c.fases.flatMap(f=>f.pasos);
+    const done = allSteps.filter(p=>p.hecho).length;
+    const total = allSteps.length;
+    const pct = Math.round((done/total)*100);
+    const isExp = expandedContrato === c.id;
+    const p = PISOS.find(x=>x.id===c.pisoId);
+    const pisoLabel = p ? `${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}` : '🏠 Propiedad';
+    const faseActual = pct===100?3:pct>60?2:pct>25?1:0;
+
+    html += `<div class="contrato-card">
+      <div class="contrato-header" onclick="toggleContratoExpand('${c.id}')">
+        <div style="font-size:20px">📋</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500">${c.inquilino}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${pisoLabel} · ${fmt(c.renta)}/mes</div>
+        </div>
+        <div style="text-align:right">
+          <span class="fase-badge fase-${faseActual}">${pct===100?'Completado':'Fase '+(faseActual+1)+'/4'}</span>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)">${done}/${total} pasos</div>
+        </div>
+        <div style="color:var(--muted);font-size:14px;margin-left:8px;transform:rotate(${isExp?90:0}deg);transition:transform 0.2s">›</div>
+      </div>
+      <div style="padding:0 16px 12px">
+        <div style="height:3px;background:var(--surface2);border-radius:2px">
+          <div style="width:${pct}%;height:100%;border-radius:2px;background:var(--accent);transition:width 0.4s"></div>
+        </div>
+      </div>`;
+
+    if (isExp) {
+      // Documentos adjuntos del contrato
+      if (c.docs && c.docs.length > 0) {
+        html += `<div style="padding:0 14px 10px">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Documentos adjuntos</div>
+          <div style="display:flex;flex-direction:column;gap:4px">`;
+        c.docs.forEach(doc => {
+          html += `<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px">📄</span>
+            <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--success)">${doc.name}</span>
+            <a href="${doc.url}" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">👁️ Ver</button></a>
+          </div>`;
+        });
+        html += `</div></div>`;
+      }
+
+      // Fases y pasos
+      c.fases.forEach((fase, fi) => {
+        const faseDone = fase.pasos.filter(p=>p.hecho).length;
+        html += `<div class="contrato-section-label">${fase.label} <span style="margin-left:6px;font-size:10px">${faseDone}/${fase.pasos.length}</span></div>
+        <div style="padding:4px 12px 8px">`;
+        fase.pasos.forEach((paso, pi) => {
+          const allFlat = c.fases.flatMap(f=>f.pasos);
+          const globalIdx = allFlat.indexOf(paso);
+          const prevOk = globalIdx === 0 || allFlat[globalIdx-1].hecho;
+          html += `
+          <div class="step-item">
+            <div class="step-left">
+              <div class="step-check ${paso.hecho?'done':prevOk?'active':'blocked-step'}"
+                onclick="${paso.hecho||prevOk?`toggleContratoStep('${c.id}','${paso.id}')`:'showToast(\"⚠️ Completa el paso anterior\")'}"></div>
+              ${!(fi===c.fases.length-1&&pi===fase.pasos.length-1)?`<div class="step-line ${paso.hecho?'done':''}"></div>`:''}
+            </div>
+            <div class="step-body">
+              <div class="step-title ${paso.hecho?'done-text':''}">
+                ${paso.titulo}
+                <span class="step-date-badge ${paso.hecho?'ok':''}">${paso.hecho?paso.fechaHecho:''}</span>
+              </div>
+              <div class="step-meta">${paso.meta}</div>
+              ${!paso.hecho&&paso.doc?`<div class="step-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();subirDocContrato('${c.id}')">📎 Adjuntar</button></div>`:''}
+            </div>
+          </div>`;
+        });
+        html += `</div>`;
+      });
+    }
+
+    html += `<div class="fianza-summary">
+      <div class="fsumm-item"><div class="fsumm-val" style="color:var(--accent)">${fmt(c.renta)}/mes</div><div class="fsumm-key">Renta</div></div>
+      <div class="fsumm-item"><div class="fsumm-val">${pct}%</div><div class="fsumm-key">Progreso</div></div>
+      <div class="fsumm-item" style="cursor:pointer" onclick="event.stopPropagation();abrirFormContrato('${c.id}')"><div class="fsumm-val">✏️</div><div class="fsumm-key">Editar</div></div>
+    </div></div>`;
+  });
+
+  html += `
+    <div class="section-label" style="margin-top:8px">Documentos necesarios</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;font-size:12px;line-height:1.9;color:var(--muted)">
+      <div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--accent);font-family:var(--mono)">Inquilino</span> DNI/NIE · 3 nóminas · Declaración IRPF · Aval si se pide</div>
+      <div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--info);font-family:var(--mono)">Contrato</span> 2 originales firmados · Inventario firmado · Acta entrega llaves</div>
+      <div style="display:flex;gap:8px"><span style="color:var(--success);font-family:var(--mono)">Legal</span> Recibo fianza · Resguardo DGA · Alta suministros a nombre inquilino</div>
+    </div>`;
+
+  el.innerHTML = html;
+}
+
+function abrirFormContrato(id) {
+  const c = id ? CONTRATOS_CHECKLIST.find(x=>x.id===id) : null;
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}" ${c&&c.pisoId===p.id?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = c ? '✏️ Editar contrato' : '📋 Nuevo contrato';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><label class="form-label">Propiedad</label>
+        <select id="ct_piso" class="form-input">${pisoOpts}</select></div>
+      <div><label class="form-label">Nombre inquilino *</label>
+        <input id="ct_inquilino" type="text" class="form-input" placeholder="Nombre completo" value="${c?c.inquilino:''}"></div>
+      <div class="form-row-2">
+        <div><label class="form-label">Renta mensual (€)</label>
+          <input id="ct_renta" type="number" class="form-input" placeholder="0" value="${c?c.renta:''}"></div>
+        <div><label class="form-label">Duración</label>
+          <select id="ct_duracion" class="form-input">
+            ${['1 año','2 años','3 años','5 años','Indefinido'].map(d=>`<option ${c&&c.duracion===d?'selected':''}>${d}</option>`).join('')}
+          </select></div>
+      </div>
+      <div class="form-row-2">
+        <div><label class="form-label">Fecha inicio</label>
+          <input id="ct_inicio" type="date" class="form-input" value="${c?c.fechaInicio:new Date().toISOString().split('T')[0]}"></div>
+        <div><label class="form-label">Fecha fin</label>
+          <input id="ct_fin" type="date" class="form-input" value="${c?c.fechaFin:''}"></div>
+      </div>
+      <div><label class="form-label">Adjuntar contrato (PDF)</label>
+        <div style="border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;background:var(--surface2)" id="ct_dropzone" onclick="document.getElementById('ct_file').click()">
+          <div style="font-size:20px;margin-bottom:4px">📎</div>
+          <div style="font-size:13px;font-weight:500">Adjuntar documento</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">PDF · máx. 20 MB</div>
+          <div id="ct_filelist" style="margin-top:6px"></div>
+        </div>
+        <input type="file" id="ct_file" style="display:none" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="onCtFileSelected(this)">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="guardarContrato('${c?c.id:''}')">
+          💾 ${c?'Guardar cambios':'Crear contrato'}
+        </button>
+        ${c?`<button class="btn btn-danger btn-sm" onclick="eliminarContrato('${c.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+function onCtFileSelected(input) {
+  const files = Array.from(input.files);
+  const zone = document.getElementById('ct_dropzone');
+  const list = document.getElementById('ct_filelist');
+  if (zone) { zone.style.borderColor='var(--accent)'; zone.style.background='rgba(200,169,110,0.06)'; }
+  if (list) list.innerHTML = files.map(f=>`<div style="font-size:12px;color:var(--success);margin-top:3px">✓ ${f.name}</div>`).join('');
+}
+
+async function guardarContrato(id) {
+  const inquilino = document.getElementById('ct_inquilino')?.value?.trim();
+  if (!inquilino) { showToast('⚠️ El nombre del inquilino es obligatorio'); return; }
+  const pisoId   = document.getElementById('ct_piso')?.value || (PISOS[0]&&PISOS[0].id);
+  const renta    = parseFloat(document.getElementById('ct_renta')?.value)||0;
+  const duracion = document.getElementById('ct_duracion')?.value || '1 año';
+  const inicio   = document.getElementById('ct_inicio')?.value || '';
+  const fin      = document.getElementById('ct_fin')?.value || '';
+  const piso     = PISOS.find(p=>p.id===pisoId);
+  const fileInput = document.getElementById('ct_file');
+  const files    = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+
+  const FASES_DEFECTO = [
+    { label:'① Verificación inquilino', pasos:[
+      { id:'p1', titulo:'Solicitar documentación al inquilino', meta:'DNI/NIE, 3 últimas nóminas, declaración IRPF', plazo:'Inicio', doc:true, hecho:false, fechaHecho:null },
+      { id:'p2', titulo:'Verificar solvencia y referencias', meta:'Comprobar deuda INEM, referencias anteriores', plazo:'Antes de firmar', doc:false, hecho:false, fechaHecho:null },
+      { id:'p3', titulo:'Archivar documentación inquilino', meta:'PDFs en carpeta Inquilinos de Drive', plazo:'Antes de firmar', doc:true, hecho:false, fechaHecho:null },
+    ]},
+    { label:'② Redacción y firma', pasos:[
+      { id:'p4', titulo:'Redactar contrato de arrendamiento', meta:'Según LAU · Incluir cláusulas IPC y actualización', plazo:'Antes de firma', doc:true, hecho:false, fechaHecho:null },
+      { id:'p5', titulo:'Firmar 2 copias originales del contrato', meta:'Propietario e inquilino · Cada uno conserva 1', plazo:'Día firma', doc:true, hecho:false, fechaHecho:null },
+      { id:'p6', titulo:'Firmar inventario y acta de entrega de llaves', meta:'Fotografiar estado del piso · Firmar inventario', plazo:'Día firma', doc:true, hecho:false, fechaHecho:null },
+    ]},
+    { label:'③ Fianza y suministros', pasos:[
+      { id:'p7', titulo:'Cobrar fianza y depósito adicional', meta:`${renta > 0 ? renta + ' € fianza (1 mes) · 2 meses máx. adicional' : 'Importe equivalente a 1 mes de renta'}`, plazo:'Día firma', doc:false, hecho:false, fechaHecho:null },
+      { id:'p8', titulo:'Depositar fianza en DGA (IGEAR)', meta:'Plazo máximo 30 días desde firma · Ibercaja o CAI', plazo:'≤ 30 días', doc:true, hecho:false, fechaHecho:null },
+      { id:'p9', titulo:'Cambio de titularidad suministros', meta:'Luz, agua, gas a nombre del inquilino', plazo:'≤ 5 días', doc:false, hecho:false, fechaHecho:null },
+    ]},
+    { label:'④ Tramitación final', pasos:[
+      { id:'p10', titulo:'Entregar llaves y copia del contrato al inquilino', meta:'2 juegos de llaves · 1 copia del contrato firmado', plazo:'Día entrada', doc:false, hecho:false, fechaHecho:null },
+      { id:'p11', titulo:'Dar de alta en Hacienda si procede', meta:'Modelo 036/037 si es actividad económica', plazo:'Primer mes', doc:false, hecho:false, fechaHecho:null },
+      { id:'p12', titulo:'Archivar toda la documentación en Drive', meta:'Contrato + fianza + inventario + DGA', plazo:'Completado', doc:false, hecho:false, fechaHecho:null },
+    ]},
+  ];
+
+  closeSheet();
+  showToast('💾 Guardando contrato…');
+
+  let contratoId = id;
+  if (id) {
+    const idx = CONTRATOS_CHECKLIST.findIndex(x=>x.id===id);
+    if (idx !== -1) {
+      CONTRATOS_CHECKLIST[idx] = { ...CONTRATOS_CHECKLIST[idx], pisoId, inquilino, renta, duracion, fechaInicio:inicio, fechaFin:fin };
+    }
+    await api({ action:'update', sheet:'Contratos', id, data:{ piso_id:pisoId, inquilino, renta, duracion, fecha_inicio:inicio, fecha_fin:fin }});
+    showToast('✅ Contrato actualizado');
+  } else {
+    const nuevo = { id:'ct_'+Date.now(), pisoId, inquilino, renta, duracion, fechaInicio:inicio, fechaFin:fin, fases:FASES_DEFECTO, docs:[] };
+    contratoId = nuevo.id;
+    CONTRATOS_CHECKLIST.unshift(nuevo);
+    await api({ action:'write', sheet:'Contratos', data:{ id:nuevo.id, piso_id:pisoId, inquilino, renta, duracion, fecha_inicio:inicio, fecha_fin:fin, creado_en:new Date().toISOString().split('T')[0] }});
+    // Guardar pasos en Sheets
+    for (const fase of FASES_DEFECTO) {
+      for (let i=0; i<fase.pasos.length; i++) {
+        const paso = fase.pasos[i];
+        await api({ action:'write', sheet:'Contrato_Pasos', data:{ id:paso.id, contrato_id:nuevo.id, fase:fase.label, titulo:paso.titulo, meta:paso.meta, plazo:paso.plazo, requiere_doc:paso.doc, hecho:false, fecha_hecho:'', orden:i }});
+      }
+    }
+    showToast('✅ Contrato creado · 12 pasos del checklist listos');
+  }
+
+  // Subir documentos adjuntos
+  if (files.length > 0 && piso) {
+    for (const file of files) {
+      if (file.size > 20*1024*1024) { showToast(`⚠️ "${file.name.substring(0,20)}" supera 20 MB`); continue; }
+      showToast(`☁️ Subiendo "${file.name.substring(0,20)}"…`);
+      await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = e.target.result.split(',')[1];
+          const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/pdf', base64Data:base64, pisoId, pisoNombre:piso.nombre, carpeta:'Contrato Arrendamiento' });
+          if (res.ok && res.data && res.data.success) {
+            const idx = CONTRATOS_CHECKLIST.findIndex(x=>x.id===contratoId);
+            if (idx !== -1) {
+              if (!CONTRATOS_CHECKLIST[idx].docs) CONTRATOS_CHECKLIST[idx].docs = [];
+              CONTRATOS_CHECKLIST[idx].docs.push({ name:file.name, url:res.data.url });
+            }
+            showToast(`✅ "${file.name.substring(0,20)}" guardado en Drive`);
+          }
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  expandedContrato = contratoId;
+  renderContrato(document.getElementById('mainContent'));
+}
+
+async function eliminarContrato(id) {
+  if (!confirm('¿Eliminar este contrato?')) return;
+  closeSheet();
+  const idx = CONTRATOS_CHECKLIST.findIndex(x=>x.id===id);
+  const c = idx !== -1 ? CONTRATOS_CHECKLIST[idx] : null;
+  if (idx !== -1) CONTRATOS_CHECKLIST.splice(idx, 1);
+  await api({ action:'delete', sheet:'Contratos', id });
+  if (c && c.docs) for (const doc of c.docs) await api({ action:'moveUrlToBorrados', fileUrl:doc.url });
+  showToast('🗑️ Contrato eliminado · documentos movidos a BORRADOS en Drive');
+  renderContrato(document.getElementById('mainContent'));
+}
+
+async function subirDocContrato(contratoId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.jpg,.jpeg,.png';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const c = CONTRATOS_CHECKLIST.find(x=>x.id===contratoId);
+    const piso = c ? PISOS.find(p=>p.id===c.pisoId) : null;
+    if (file.size > 20*1024*1024) { showToast('⚠️ El archivo supera 20 MB'); return; }
+    showToast('☁️ Subiendo a Drive…');
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/pdf', base64Data:base64, pisoId:c?.pisoId||(PISOS[0]?.id), pisoNombre:piso?.nombre||'General', carpeta:'Contrato Arrendamiento' });
+        if (res.ok && res.data && res.data.success) {
+          const idx = CONTRATOS_CHECKLIST.findIndex(x=>x.id===contratoId);
+          if (idx !== -1) {
+            if (!CONTRATOS_CHECKLIST[idx].docs) CONTRATOS_CHECKLIST[idx].docs = [];
+            CONTRATOS_CHECKLIST[idx].docs.push({ name:file.name, url:res.data.url });
+          }
+          showToast('✅ Documento adjuntado');
+          renderContrato(document.getElementById('mainContent'));
+        } else showToast('⚠️ Error subiendo');
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
+}
+
+async function subirDocFianza(fianzaId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.jpg,.jpeg,.png';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const f = FIANZAS.find(x=>x.id===fianzaId);
+    const piso = f ? PISOS.find(p=>p.id===f.pisoId) : null;
+    if (file.size > 20*1024*1024) { showToast('⚠️ El archivo supera 20 MB'); return; }
+    showToast('☁️ Subiendo a Drive…');
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/pdf', base64Data:base64, pisoId:f?.pisoId||(PISOS[0]?.id), pisoNombre:piso?.nombre||'General', carpeta:'Fianzas' });
+        if (res.ok && res.data && res.data.success) {
+          const idx = FIANZAS.findIndex(x=>x.id===fianzaId);
+          if (idx !== -1) {
+            if (!FIANZAS[idx].docs) FIANZAS[idx].docs = [];
+            FIANZAS[idx].docs.push({ name:file.name, url:res.data.url });
+          }
+          showToast('✅ Documento adjuntado · guardado en Drive / Fianzas');
+          renderFianzas(document.getElementById('mainContent'));
+        } else showToast('⚠️ Error subiendo');
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
+}
+
+async function subirDocSuministro(sumiId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.jpg,.jpeg,.png';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const s = SUMINISTROS.find(x=>x.id===sumiId);
+    const piso = s ? PISOS.find(p=>p.id===s.pisoId) : null;
+    if (file.size > 20*1024*1024) { showToast('⚠️ El archivo supera 20 MB'); return; }
+    showToast('☁️ Subiendo a Drive…');
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/pdf', base64Data:base64, pisoId:s?.pisoId||(PISOS[0]?.id), pisoNombre:piso?.nombre||'General', carpeta:'Suministros' });
+        if (res.ok && res.data && res.data.success) {
+          const idx = SUMINISTROS.findIndex(x=>x.id===sumiId);
+          if (idx !== -1) {
+            if (!SUMINISTROS[idx].docs) SUMINISTROS[idx].docs = [];
+            SUMINISTROS[idx].docs.push({ name:file.name, url:res.data.url });
+          }
+          showToast('✅ Documento adjuntado · guardado en Drive / Suministros');
+          renderSuministros(document.getElementById('mainContent'));
+        } else showToast('⚠️ Error subiendo');
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
+}
+
+
+
+// ══════════════════════════════════════════
+// ── MÓDULO: MANTENIMIENTO Y AVERÍAS ──
+// ══════════════════════════════════════════
+const CATEGORIAS_AVERIA = ['Todas','Fontanería','Electricidad','Estructura','Electrodomésticos','Pintura','Otros'];
+const CAT_CLASS = {
+  'Fontanería':'cat-fontaneria','Electricidad':'cat-electricidad',
+  'Estructura':'cat-estructura','Electrodomésticos':'cat-electrodomesticos',
+  'Pintura':'cat-pintura','Otros':'cat-otros'
+};
+
+const AVERIAS = [];
+
+let catFiltro = 'Todas';
+let mostrarFormAveria = false;
+let expandedAveria = null;
+
+
+
+
+
+
+
+
+// ── EDITAR AVERÍA ──
+
+
+
+
+// ══════════════════════════════════════════
+// ── CRUD: AVERÍAS ──
+// ══════════════════════════════════════════
+
+
+
+
+
+// ══════════════════════════════════════════
+// ── CRUD: FIANZAS ──
+// ══════════════════════════════════════════
+
+function editarFianza(id) {
+  const f = FIANZAS.find(x=>x.id===id);
+  if (!f) return;
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}" ${p.id===f.pisoId?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = '✏️ Editar fianza';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><label class="form-label">Propiedad</label><select id="ef_piso" class="form-input">${pisoOpts}</select></div>
+      <div><label class="form-label">Tipo</label>
+        <select id="ef_tipo" class="form-input">
+          <option value="deposito" ${f.tipo==='deposito'?'selected':''}>📥 Depósito</option>
+          <option value="devolucion" ${f.tipo==='devolucion'?'selected':''}>📤 Devolución</option>
+        </select>
+      </div>
+      <div><label class="form-label">Inquilino</label><input id="ef_inquilino" type="text" class="form-input" value="${f.inquilino||''}"></div>
+      <div class="form-row-2">
+        <div><label class="form-label">Importe (€)</label><input id="ef_importe" type="number" class="form-input" value="${f.importe}"></div>
+        <div><label class="form-label">Fecha inicio</label><input id="ef_fecha" type="date" class="form-input" value="${f.fechaInicio||''}"></div>
+      </div>
+      <div><label class="form-label">Nº Expediente DGA</label><input id="ef_exp" type="text" class="form-input" placeholder="ARA-20XX-XXXXX" value="${f.numExpediente||''}"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="guardarEdicionFianza('${id}')">💾 Guardar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmarEliminarFianza('${id}')">🗑️</button>
+      </div>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+async function guardarEdicionFianza(id) {
+  const f = FIANZAS.find(x=>x.id===id);
+  if (!f) return;
+  f.pisoId        = document.getElementById('ef_piso').value;
+  f.tipo          = document.getElementById('ef_tipo').value;
+  f.inquilino     = document.getElementById('ef_inquilino').value.trim();
+  f.importe       = parseFloat(document.getElementById('ef_importe').value)||0;
+  f.fechaInicio   = document.getElementById('ef_fecha').value;
+  f.numExpediente = document.getElementById('ef_exp').value.trim()||null;
+  closeSheet();
+  await api({ action:'update', sheet:'Fianzas', id, data:{
+    piso_id: f.pisoId, tipo: f.tipo, inquilino: f.inquilino,
+    importe: f.importe, fecha_inicio: f.fechaInicio,
+    num_expediente: f.numExpediente||'',
+  }});
+  renderFianzas(document.getElementById('mainContent'));
+  showToast('✅ Fianza actualizada');
+}
+
+function confirmarEliminarFianza(id) {
+  const f = FIANZAS.find(x=>x.id===id);
+  closeSheet();
+  setTimeout(()=>{
+    document.getElementById('sheetTitle').textContent = '⚠️ Eliminar fianza';
+    document.getElementById('sheetContent').innerHTML = `
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:36px;margin-bottom:12px">${f.tipo==='deposito'?'📥':'📤'}</div>
+        <div style="font-size:15px;font-weight:500;margin-bottom:8px">${f.inquilino} · ${fmt(f.importe)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+          Se eliminará esta fianza y todos sus pasos.<br>Esta acción no se puede deshacer.
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeSheet()">Cancelar</button>
+          <button class="btn btn-danger" style="flex:1;justify-content:center" onclick="eliminarFianza('${id}')">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+    document.getElementById('sheetBackdrop').classList.add('open');
+    document.getElementById('sheet').classList.add('open');
+  }, 150);
+}
+
+async function eliminarFianza(id) {
+  closeSheet();
+  const idx = FIANZAS.findIndex(x=>x.id===id);
+  const f = idx !== -1 ? FIANZAS[idx] : null;
+  if (idx !== -1) FIANZAS.splice(idx, 1);
+  await api({ action:'delete', sheet:'Fianzas', id:id });
+  if (f && f.docs) for (const doc of f.docs) await api({ action:'moveUrlToBorrados', fileUrl:doc.url });
+  renderFianzas(document.getElementById('mainContent'));
+  showToast('🗑️ Fianza eliminada · documentos movidos a BORRADOS en Drive');
+}
+
+// ══════════════════════════════════════════
+// ── CRUD: SUMINISTROS ──
+// ══════════════════════════════════════════
+
+function editarSuministro(id) {
+  const s = SUMINISTROS.find(x=>x.id===id);
+  if (!s) return;
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}" ${p.id===s.pisoId?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = '✏️ Editar suministro';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><label class="form-label">Propiedad</label><select id="es_piso" class="form-input">${pisoOpts}</select></div>
+      <div><label class="form-label">Tipo</label>
+        <select id="es_tipo" class="form-input">
+          <option value="luz" ${s.tipo==='luz'?'selected':''}>⚡ Electricidad</option>
+          <option value="agua" ${s.tipo==='agua'?'selected':''}>💧 Agua</option>
+          <option value="gas" ${s.tipo==='gas'?'selected':''}>🔥 Gas natural</option>
+        </select>
+      </div>
+      <div><label class="form-label">Comercializadora</label><input id="es_com" type="text" class="form-input" value="${s.comercializadora||''}"></div>
+      <div><label class="form-label">Titular / Inquilino</label><input id="es_inq" type="text" class="form-input" value="${s.inquilino||''}"></div>
+      <div><label class="form-label">CUPS / Referencia</label><input id="es_cups" type="text" class="form-input" style="font-family:var(--mono)" value="${s.cups||''}"></div>
+      <div class="form-row-2">
+        <div><label class="form-label">Potencia / Caudal</label><input id="es_pot" type="text" class="form-input" placeholder="3,45 kW…" value="${s.potencia||''}"></div>
+        <div><label class="form-label">Tarifa</label><input id="es_tarifa" type="text" class="form-input" placeholder="2.0TD…" value="${s.tarifaAcceso||''}"></div>
+      </div>
+      <div><label class="form-label">Fecha de alta</label><input id="es_fecha" type="date" class="form-input" value="${s.fechaAlta||''}"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="guardarEdicionSuministro('${id}')">💾 Guardar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmarEliminarSuministro('${id}')">🗑️</button>
+      </div>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+async function guardarEdicionSuministro(id) {
+  const s = SUMINISTROS.find(x=>x.id===id);
+  if (!s) return;
+  s.pisoId          = document.getElementById('es_piso').value;
+  s.tipo            = document.getElementById('es_tipo').value;
+  s.comercializadora= document.getElementById('es_com').value.trim();
+  s.inquilino       = document.getElementById('es_inq').value.trim();
+  s.cups            = document.getElementById('es_cups').value.trim();
+  s.potencia        = document.getElementById('es_pot').value.trim();
+  s.tarifaAcceso    = document.getElementById('es_tarifa').value.trim();
+  s.fechaAlta       = document.getElementById('es_fecha').value;
+  s.emoji           = s.tipo==='luz'?'⚡':s.tipo==='agua'?'💧':'🔥';
+  s.label           = s.tipo==='luz'?'Electricidad':s.tipo==='agua'?'Agua':'Gas natural';
+  closeSheet();
+  await api({ action:'update', sheet:'Suministros', id, data:{
+    piso_id: s.pisoId, tipo: s.tipo, comercializadora: s.comercializadora,
+    inquilino: s.inquilino, cups: s.cups, potencia: s.potencia,
+    tarifa: s.tarifaAcceso, fecha_alta: s.fechaAlta,
+  }});
+  renderSuministros(document.getElementById('mainContent'));
+  showToast('✅ Suministro actualizado');
+}
+
+function confirmarEliminarSuministro(id) {
+  const s = SUMINISTROS.find(x=>x.id===id);
+  closeSheet();
+  setTimeout(()=>{
+    document.getElementById('sheetTitle').textContent = '⚠️ Eliminar suministro';
+    document.getElementById('sheetContent').innerHTML = `
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:36px;margin-bottom:12px">${s.emoji}</div>
+        <div style="font-size:15px;font-weight:500;margin-bottom:8px">${s.label} · ${s.comercializadora}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+          Se eliminará este suministro y sus checklists.<br>Esta acción no se puede deshacer.
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeSheet()">Cancelar</button>
+          <button class="btn btn-danger" style="flex:1;justify-content:center" onclick="eliminarSuministro('${id}')">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+    document.getElementById('sheetBackdrop').classList.add('open');
+    document.getElementById('sheet').classList.add('open');
+  }, 150);
+}
+
+async function eliminarSuministro(id) {
+  closeSheet();
+  const idx = SUMINISTROS.findIndex(x=>x.id===id);
+  const s = idx !== -1 ? SUMINISTROS[idx] : null;
+  if (idx !== -1) SUMINISTROS.splice(idx, 1);
+  await api({ action:'delete', sheet:'Suministros', id:id });
+  if (s && s.docs) for (const doc of s.docs) await api({ action:'moveUrlToBorrados', fileUrl:doc.url });
+  renderSuministros(document.getElementById('mainContent'));
+  showToast('🗑️ Suministro eliminado · documentos movidos a BORRADOS en Drive');
+}
+
+// ══════════════════════════════════════════════════════════
+// ── GOOGLE SHEETS + DRIVE — versión 7 ──
+// ══════════════════════════════════════════════════════════
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-UxGj4NdvFmnYEFsFa47t8Vg3Na8BJzJEPuavCrrP1skiPB3FP3MYYBkxZlKWWOJbPQ/exec';
+
+let selectedCarpetaForUpload = 'General';
+let SHEETS_OK = false;
+
+// ── LLAMADA AL APPS SCRIPT ──
+// Apps Script requiere no-cors o redirect:follow para evitar el error "Failed to fetch"
+async function api(body) {
+  return new Promise(function(resolve) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SCRIPT_URL, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      try {
+        var parsed = JSON.parse(xhr.responseText);
+        if (!parsed.ok && parsed.error) console.error('API error:', parsed.error);
+        resolve(parsed);
+      } catch(e) {
+        console.error('Respuesta no JSON:', xhr.responseText ? xhr.responseText.substring(0,200) : '(vacía)');
+        resolve({ ok: false, error: 'Respuesta inesperada del servidor' });
+      }
+    };
+    xhr.onerror = function() {
+      console.error('XHR error de red');
+      resolve({ ok: false, error: 'Error de red' });
+    };
+    xhr.send(JSON.stringify(body));
+  });
+}
+
+// ── PANTALLA DE CARGA ──
+function mostrarPantallaCarga(msg) {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;padding:20px">
+      <div style="font-size:36px">☁️</div>
+      <div style="font-size:15px;font-weight:500">${msg||'Conectando…'}</div>
+      <div style="width:200px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:4px">
+        <div style="height:100%;background:var(--accent);border-radius:2px;animation:ldbar 1.5s ease-in-out infinite"></div>
+      </div>
+    </div>
+    <style>@keyframes ldbar{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}</style>`;
+}
+
+// ── CARGAR DATOS ──
+async function cargarTodo() {
+  mostrarPantallaCarga('Cargando datos…');
+
+  try {
+    // Inicializar hojas (crea las que faltan, no borra nada)
+    await api({ action:'init' });
+
+    // Leer pisos
+    const resPisos = await api({ action:'read', sheet:'Pisos' });
+
+    if (resPisos.ok && resPisos.data && resPisos.data.rows && resPisos.data.rows.length > 0) {
+      SHEETS_OK = true;
+      PISOS.length = 0;
+      resPisos.data.rows.forEach(row => {
+        PISOS.push({
+          id: String(row.id), nombre: row.nombre||'Sin nombre',
+          dir: row.direccion||'', tipo: row.tipo||'residencial',
+          estado: row.estado||'activo', inquilino: row.inquilino||null,
+          renta: Number(row.renta)||0, ingresos: Number(row.ingresos)||0,
+          gastos: Number(row.gastos)||0, ico: row.ico||'🏠',
+          docs: 0, driveUrl: row.drive_url||null,
+          carpetas: getCarpetasPorTipo(row.tipo||'residencial'),
+        });
+      });
+
+      // Averías
+      const resAv = await api({ action:'read', sheet:'Averias' });
+      if (resAv.ok && resAv.data && resAv.data.rows) {
+        AVERIAS.length = 0;
+        resAv.data.rows.forEach(r => AVERIAS.push({
+          id:String(r.id), pisoId:String(r.piso_id),
+          titulo:r.titulo||'', descripcion:r.descripcion||'',
+          categoria:r.categoria||'Otros', fecha:r.fecha||'',
+          coste:Number(r.coste)||0, tecnico:r.tecnico||'',
+          garantia:r.garantia||null,
+          factura:r.tiene_factura==='true'||r.tiene_factura===true,
+          estado:r.estado||'abierto', expandido:false,
+        }));
+      }
+
+      // Fianzas + pasos
+      const [resFi, resFp] = await Promise.all([
+        api({action:'read',sheet:'Fianzas'}),
+        api({action:'read',sheet:'Fianza_Pasos'}),
+      ]);
+      if (resFi.ok && resFi.data && resFi.data.rows && resFi.data.rows.length > 0) {
+        const pp = {};
+        if (resFp.ok && resFp.data && resFp.data.rows) {
+          resFp.data.rows.forEach(p => {
+            if (!pp[p.fianza_id]) pp[p.fianza_id] = [];
+            pp[p.fianza_id].push({ id:String(p.id), titulo:p.titulo||'', meta:p.meta||'', plazo:p.plazo||'',
+              doc:p.requiere_doc==='true'||p.requiere_doc===true,
+              hecho:p.hecho==='true'||p.hecho===true, fechaHecho:p.fecha_hecho||null });
+          });
+        }
+        FIANZAS.length = 0;
+        resFi.data.rows.forEach(r => FIANZAS.push({
+          id:String(r.id), pisoId:String(r.piso_id), tipo:r.tipo||'deposito',
+          inquilino:r.inquilino||'', importe:Number(r.importe)||0,
+          fechaInicio:r.fecha_inicio||'', numExpediente:r.num_expediente||null,
+          pasos:pp[r.id]||[],
+        }));
+      }
+
+      // Actividad
+      const resAct = await api({action:'read',sheet:'Actividad'});
+      if (resAct.ok && resAct.data && resAct.data.rows) {
+        ACTIVIDAD.length = 0;
+        resAct.data.rows.slice(-30).reverse().forEach(r => ACTIVIDAD.push({
+          tipo:r.tipo||'doc', piso:String(r.piso_id), titulo:r.titulo||'',
+          meta:r.meta||'', tag:r.tag||'', tagClass:r.tag_clase||'gold',
+        }));
+      }
+
+      // Cargar gastos fiscales
+      const resGastos = await api({action:'read', sheet:'Gastos'});
+      if (resGastos.ok && resGastos.data && resGastos.data.rows) {
+        GASTOS_FISCAL.length = 0;
+        resGastos.data.rows.forEach(r => GASTOS_FISCAL.push({
+          id:          String(r.id),
+          pisoId:      String(r.piso_id),
+          concepto:    r.concepto    || '',
+          categoria:   r.categoria   || 'otros',
+          importe:     Number(r.importe) || 0,
+          fecha:       r.fecha        || '',
+          proveedor:   r.proveedor    || '',
+          numFactura:  r.num_factura  || '',
+          formaPago:   r.forma_pago   || '',
+          conIva:      r.con_iva === 'true' || r.con_iva === true,
+          notas:       r.notas        || '',
+          facturaUrl:  r.factura_url  || null,
+        }));
+        // Agregar gastos por piso
+        actualizarGastosPorPiso();
+      }
+
+      // Cargar otra documentación
+      const resOtraDoc = await api({action:'read', sheet:'OtraDoc'});
+      if (resOtraDoc.ok && resOtraDoc.data && resOtraDoc.data.rows) {
+        OTRA_DOC.length = 0;
+        resOtraDoc.data.rows.forEach(r => OTRA_DOC.push({
+          id:          String(r.id),
+          pisoId:      String(r.piso_id),
+          titulo:      r.titulo       || '',
+          categoria:   r.categoria    || 'otros',
+          fecha:       r.fecha        || '',
+          descripcion: r.descripcion  || '',
+          fileUrl:     r.file_url     || null,
+          fileName:    r.file_name    || null,
+          creado_en:   r.creado_en    || '',
+        }));
+      }
+
+      showToast('✅ Datos cargados correctamente');
+
+    } else if (!resPisos.ok) {
+      // Error real de conexión
+      console.error('Error Sheets:', resPisos.error);
+      SHEETS_OK = false;
+      PISOS.length = AVERIAS.length = FIANZAS.length = ACTIVIDAD.length = 0;
+      showToast('⚠️ Error conectando · Pulsa ⟳ para reintentar');
+    } else {
+      // Sheets vacío — primera vez o sin datos
+      SHEETS_OK = true;
+      PISOS.length = AVERIAS.length = FIANZAS.length = ACTIVIDAD.length = 0;
+      showToast('☁️ Conectado · Añade tus propiedades reales');
+    }
+
+  } catch(err) {
+    console.error('cargarTodo error:', err);
+    SHEETS_OK = false;
+    showToast('⚠️ Error de red · Pulsa ⟳ para reintentar');
+  }
+
+  render();
+}
+
+// ── SYNC MANUAL ──
+async function syncManual() {
+  document.querySelector('.sync-btn').textContent = '↻';
+  await cargarTodo();
+  document.querySelector('.sync-btn').textContent = '⟳';
+}
+document.querySelector('.sync-btn').onclick = syncManual;
+
+function getCarpetasPorTipo(tipo) {
+  if (tipo === 'turismo') return [{id:'c1',nombre:'Contratos & Reservas',ico:'📋',count:0},{id:'c2',nombre:'Facturación',ico:'💶',count:0},{id:'c3',nombre:'Gastos & Suministros',ico:'🧾',count:0},{id:'c4',nombre:'Incidencias',ico:'🔧',count:0},{id:'c5',nombre:'Documentación Legal',ico:'⚖️',count:0},{id:'c6',nombre:'Fotos',ico:'📷',count:0}];
+  if (tipo === 'oficina') return [{id:'c1',nombre:'Escrituras & Registro',ico:'📜',count:0},{id:'c2',nombre:'ITE & Comunidad',ico:'🏛️',count:0},{id:'c3',nombre:'Gastos Comunidad',ico:'🧾',count:0},{id:'c4',nombre:'Suministros',ico:'⚡',count:0},{id:'c5',nombre:'Candidatos Inquilinos',ico:'👥',count:0},{id:'c6',nombre:'Fotos',ico:'📷',count:0}];
+  return [{id:'c1',nombre:'Contrato Arrendamiento',ico:'📋',count:0},{id:'c2',nombre:'Inquilinos',ico:'👤',count:0},{id:'c3',nombre:'Pagos & Recibos',ico:'💳',count:0},{id:'c4',nombre:'IPC & Actualizaciones',ico:'📈',count:0},{id:'c5',nombre:'Gastos',ico:'🧾',count:0},{id:'c6',nombre:'Suministros',ico:'⚡',count:0},{id:'c7',nombre:'Incidencias',ico:'🔧',count:0},{id:'c8',nombre:'Certificados & Legal',ico:'⚖️',count:0},{id:'c9',nombre:'Fotos Estado Piso',ico:'📷',count:0},{id:'c10',nombre:'Comunicaciones',ico:'📨',count:0}];
+}
+
+async function handleFiles(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+
+  const pisoId  = selectedPisoForUpload || (PISOS[0] && PISOS[0].id);
+  const piso    = PISOS.find(p => p.id === pisoId);
+  const carpeta = selectedCarpetaForUpload || 'General';
+
+  if (!piso) { showToast('⚠️ Selecciona una propiedad primero'); return; }
+
+  for (const file of files) {
+    // Límite 20 MB
+    if (file.size > 20 * 1024 * 1024) {
+      showToast(`⚠️ "${file.name.substring(0,20)}" supera 20 MB · Comprime el PDF`);
+      continue;
+    }
+
+    showToast(`☁️ Subiendo "${file.name.substring(0,22)}"…`);
+
+    try {
+      await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+        reader.onload  = async (e) => {
+          try {
+            const dataUrl = e.target.result;
+            if (!dataUrl) throw new Error('Archivo vacío');
+            const base64 = dataUrl.split(',')[1];
+            if (!base64) throw new Error('Error de codificación');
+
+            const payload = {
+              action:     'upload',
+              fileName:   file.name,
+              mimeType:   file.type || 'application/octet-stream',
+              base64Data: base64,
+              pisoId:     pisoId,
+              pisoNombre: piso.nombre,
+              carpeta:    carpeta,
+            };
+
+            const res = await api(payload);
+            console.log('Upload response:', JSON.stringify(res).substring(0,200));
+
+            if (res.ok && res.data && res.data.success) {
+              showToast(`✅ "${file.name.substring(0,20)}" guardado en Drive`);
+              ACTIVIDAD.unshift({ tipo:'doc', piso:pisoId, titulo:file.name.substring(0,40), meta:piso.nombre+' · '+carpeta, tag:'DOC', tagClass:'gold' });
+              const idx = PISOS.findIndex(p => p.id === pisoId);
+              if (idx !== -1) PISOS[idx].docs = (PISOS[idx].docs||0) + 1;
+            } else {
+              const errDetail = res.error || (res.data && res.data.error) || JSON.stringify(res).substring(0,120);
+              console.error('Upload failed. Full response:', JSON.stringify(res));
+              showToast(`⚠️ Error subida: ${String(errDetail).substring(0,80)}`);
+            }
+          } catch(err) {
+            console.error('Upload inner error:', err);
+            showToast(`⚠️ Error subiendo: ${err.message || 'desconocido'}`);
+          }
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    } catch(err) {
+      console.error('Upload outer error:', err);
+      showToast(`⚠️ ${err.message || 'Error subiendo archivo'}`);
+    }
+  }
+
+  if (currentView === 'carpeta') renderCarpeta(document.getElementById('mainContent'));
+  input.value = '';
+}
+
+async function guardarPiso(id) {
+  const nombre = document.getElementById('fp_nombre').value.trim();
+  if (!nombre) { showToast('⚠️ El nombre es obligatorio'); return; }
+  const datos = { nombre, dir: document.getElementById('fp_dir').value.trim(), tipo: document.getElementById('fp_tipo').value, estado: document.getElementById('fp_estado').value, inquilino: document.getElementById('fp_inquilino').value.trim()||null, renta: parseFloat(document.getElementById('fp_renta').value)||0, ingresos: parseFloat(document.getElementById('fp_ingresos').value)||0, gastos: parseFloat(document.getElementById('fp_gastos').value)||0, ico: document.getElementById('fp_ico').value||'🏠' };
+  closeSheet();
+  if (id) {
+    const idx = PISOS.findIndex(p => p.id === id);
+    if (idx !== -1) PISOS[idx] = { ...PISOS[idx], ...datos };
+    showToast('💾 Guardando…');
+    await api({ action:'update', sheet:'Pisos', id, data:{ ...datos, direccion:datos.dir } });
+    showToast('✅ Propiedad actualizada');
+  } else {
+    const pisoId = 'p_' + Date.now();
+    const nuevo  = { id:pisoId, ...datos, docs:0, carpetas:getCarpetasPorTipo(datos.tipo) };
+    PISOS.push(nuevo); render();
+    showToast('💾 Guardando en Sheets…');
+    await api({ action:'write', sheet:'Pisos', data:{ id:pisoId, nombre:nuevo.nombre, direccion:nuevo.dir, tipo:nuevo.tipo, estado:nuevo.estado, inquilino:nuevo.inquilino||'', renta:nuevo.renta, ingresos:nuevo.ingresos, gastos:nuevo.gastos, ico:nuevo.ico, drive_url:'', creado_en:new Date().toISOString().split('T')[0] } });
+    showToast('📁 Creando carpetas en Drive…');
+    const resDrive = await api({ action:'createFolders', pisoId, pisoNombre:nuevo.nombre, carpetas:nuevo.carpetas.map(c=>c.nombre) });
+    if (resDrive.ok && resDrive.data && resDrive.data.success) {
+      showToast(`✅ "${nuevo.nombre}" creada · ${nuevo.carpetas.length} carpetas en Drive 📁`);
+    } else {
+      console.error('Drive folders error:', resDrive);
+      showToast('✅ Propiedad creada · ⚠️ Revisa permisos Drive');
+    }
+  }
+  render();
+}
+
+async function eliminarPiso(id) {
+  closeSheet();
+  const idx = PISOS.findIndex(p => p.id === id);
+  if (idx !== -1) PISOS.splice(idx, 1);
+  await api({ action:'delete', sheet:'Pisos', id });
+  showToast('🗑️ Propiedad eliminada');
+  currentView = 'pisos'; render();
+}
+
+
+
+
+window.toggleFianzaStep = async function(fid, sid) {
+  const f = FIANZAS.find(x=>x.id===fid); const s = f?.pasos.find(x=>x.id===sid);
+  if (!s) return;
+  const idx = f.pasos.indexOf(s);
+  if (!s.hecho && idx>0 && !f.pasos[idx-1].hecho) { showToast('⚠️ Completa el paso anterior'); return; }
+  s.hecho = !s.hecho; s.fechaHecho = s.hecho ? new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : null;
+  renderFianzas(document.getElementById('mainContent'));
+  await api({ action:'update', sheet:'Fianza_Pasos', id:sid, data:{ hecho:s.hecho, fecha_hecho:s.fechaHecho||'' } });
+  showToast(s.hecho?'✅ Paso completado':'↩ Desmarcado');
+};
+
+window.toggleSumiStep = async function(sid, tipo, stepId) {
+  const s = SUMINISTROS.find(x=>x.id===sid); const steps = tipo==='alta'?s.altaSteps:s.bajaSteps; const step = steps.find(x=>x.id===stepId); const idx = steps.indexOf(step);
+  if (!step.hecho && idx>0 && !steps[idx-1].hecho) { showToast('⚠️ Completa el paso anterior'); return; }
+  step.hecho = !step.hecho; step.fechaHecho = step.hecho ? new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : null;
+  renderSuministros(document.getElementById('mainContent'));
+  await api({ action:'update', sheet:'Suministro_Pasos', id:stepId, data:{ hecho:step.hecho, fecha_hecho:step.fechaHecho||'' } });
+  showToast(step.hecho?'✅ Guardado':'✅ Actualizado');
+};
+
+window.toggleContratoStep = async function(cid, stepId) {
+  const c = CONTRATOS_CHECKLIST.find(x=>x.id===cid); const allFlat = c?.fases.flatMap(f=>f.pasos); const step = allFlat?.find(p=>p.id===stepId); const gIdx = allFlat?.indexOf(step);
+  if (!step) return;
+  if (!step.hecho && gIdx>0 && !allFlat[gIdx-1].hecho) { showToast('⚠️ Completa el paso anterior'); return; }
+  step.hecho = !step.hecho; step.fechaHecho = step.hecho ? new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : null;
+  renderContrato(document.getElementById('mainContent'));
+  await api({ action:'update', sheet:'Contrato_Pasos', id:stepId, data:{ hecho:step.hecho, fecha_hecho:step.fechaHecho||'' } });
+  showToast(step.hecho?'✅ Guardado':'✅ Actualizado');
+};
+
+
+// ══════════════════════════════════════════════════════════
+// ── MÓDULO: GASTOS & FISCAL ──
+// ══════════════════════════════════════════════════════════
+
+const CATS_FISCAL = [
+  { id:'reparaciones', label:'Reparaciones y conservación', ico:'🔧', bg:'rgba(91,155,213,0.15)',  deducible:'100%' },
+  { id:'seguros',      label:'Seguros del inmueble',         ico:'🛡️', bg:'rgba(200,169,110,0.15)', deducible:'100%' },
+  { id:'comunidad',    label:'Gastos de comunidad',          ico:'🏛️', bg:'rgba(76,175,110,0.15)',  deducible:'100%' },
+  { id:'ibi',          label:'IBI y tasas municipales',      ico:'📋', bg:'rgba(224,85,85,0.15)',   deducible:'100%' },
+  { id:'suministros',  label:'Suministros (propietario)',     ico:'⚡', bg:'rgba(255,152,0,0.15)',   deducible:'100%' },
+  { id:'amortizacion', label:'Amortización del inmueble',    ico:'📉', bg:'rgba(136,136,136,0.15)', deducible:'3%'   },
+  { id:'hipoteca',     label:'Intereses hipoteca / préstamo',ico:'🏦', bg:'rgba(200,169,110,0.15)', deducible:'100%' },
+  { id:'gestoria',     label:'Gestoría / asesoría',          ico:'📁', bg:'rgba(91,155,213,0.15)',  deducible:'100%' },
+  { id:'publicidad',   label:'Publicidad / plataformas',     ico:'📢', bg:'rgba(76,175,110,0.15)',  deducible:'100%' },
+  { id:'otros',        label:'Otros gastos necesarios',      ico:'🧾', bg:'rgba(136,136,136,0.12)', deducible:'100%' },
+];
+
+const GASTOS_FISCAL = [];
+let expandedGasto = null;
+let anioFiltro    = new Date().getFullYear();
+let pisoFiltroG   = 'todos';
+let gastoParaFactura = null;
+
+// Agrega los gastos registrados en el módulo Gastos al campo p.gastos de cada piso
+// Solo cuenta gastos del mes actual para que coincida con la vista mensual
+function actualizarGastosPorPiso() {
+  const hoy    = new Date();
+  const mes    = hoy.getMonth();
+  const anio   = hoy.getFullYear();
+
+  // Acumular gastos por piso del mes actual
+  const totales = {};
+  GASTOS_FISCAL.forEach(g => {
+    if (!g.pisoId || !g.importe) return;
+    const fechaG = g.fecha ? new Date(g.fecha) : null;
+    // Incluir todos los gastos si no tienen fecha, o los del mes/año actual
+    const esMesActual = !fechaG || (fechaG.getMonth()===mes && fechaG.getFullYear()===anio);
+    if (esMesActual) {
+      totales[g.pisoId] = (totales[g.pisoId]||0) + (Number(g.importe)||0);
+    }
+  });
+
+  // Actualizar PISOS con el total calculado
+  PISOS.forEach(p => {
+    if (totales[p.id] !== undefined) {
+      p.gastos = totales[p.id];
+    }
+  });
+}
+
+function getCatFiscal(id) { return CATS_FISCAL.find(c=>c.id===id) || CATS_FISCAL[CATS_FISCAL.length-1]; }
+
+function getAniosDisponibles() {
+  const anios = new Set(GASTOS_FISCAL.map(g => g.fecha ? new Date(g.fecha).getFullYear() : new Date().getFullYear()));
+  anios.add(new Date().getFullYear());
+  return Array.from(anios).sort((a,b)=>b-a);
+}
+
+function getGastosFiltrados() {
+  return GASTOS_FISCAL.filter(g => {
+    const anioG = g.fecha ? new Date(g.fecha).getFullYear() : new Date().getFullYear();
+    return anioG===anioFiltro && (pisoFiltroG==='todos'||g.pisoId===pisoFiltroG);
+  });
+}
+
+function getResumenFiscal(gastos) {
+  const r = {};
+  gastos.forEach(g => {
+    const cat = getCatFiscal(g.categoria);
+    if (!r[g.categoria]) r[g.categoria] = { label:cat.label, ico:cat.ico, total:0, deducible:cat.deducible };
+    r[g.categoria].total += Number(g.importe)||0;
+  });
+  return r;
+}
+
+function toggleGasto(id) {
+  expandedGasto = expandedGasto===id ? null : id;
+  renderGastos(document.getElementById('mainContent'));
+}
+
+function renderGastos(el) {
+  const anios   = getAniosDisponibles();
+  const gastosF = getGastosFiltrados();
+  const total   = gastosF.reduce((s,g)=>s+(Number(g.importe)||0),0);
+  const resumen = getResumenFiscal(gastosF);
+  const pisoOpts = '<option value="todos">Todas las propiedades</option>' +
+    PISOS.map(p=>`<option value="${p.id}" ${pisoFiltroG===p.id?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+
+  let html = `
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:14px" onclick="abrirFormGasto()">
+      + Registrar gasto / factura
+    </button>
+    <div class="anio-selector">`;
+  anios.forEach(a => {
+    html += `<div class="anio-chip ${a===anioFiltro?'active':''}" onclick="anioFiltro=${a};renderGastos(document.getElementById('mainContent'))">${a}</div>`;
+  });
+  html += `</div>
+    <div style="margin-bottom:14px">
+      <select class="form-input" style="font-size:13px;padding:8px 12px" onchange="pisoFiltroG=this.value;renderGastos(document.getElementById('mainContent'))">${pisoOpts}</select>
+    </div>`;
+
+  if (gastosF.length > 0) {
+    html += `<div class="resumen-fiscal">
+      <div class="resumen-fiscal-title">📊 Resumen fiscal ${anioFiltro} — Gastos deducibles IRPF</div>`;
+    Object.entries(resumen).forEach(([key,val]) => {
+      html += `<div class="resumen-fiscal-row"><span class="cat">${val.ico} ${val.label}</span><span class="imp">-${fmt(val.total)}</span></div>`;
+    });
+    html += `<div class="resumen-fiscal-total"><span>Total deducible ${anioFiltro}</span><span style="color:var(--danger)">-${fmt(total)}</span></div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:16px" onclick="exportarFiscal()">📥 Exportar CSV para declaración</button>`;
+  }
+
+  html += `<div class="section-label">${gastosF.length} gasto${gastosF.length!==1?'s':''} · ${anioFiltro}</div>`;
+
+  if (gastosF.length === 0) {
+    html += `<div class="empty"><div class="ei">🧾</div><p>No hay gastos en ${anioFiltro}.<br>Pulsa el botón de arriba para añadir el primero.</p></div>`;
+  }
+
+  [...gastosF].sort((a,b)=>new Date(b.fecha||0)-new Date(a.fecha||0)).forEach(g => {
+    const cat  = getCatFiscal(g.categoria);
+    const piso = PISOS.find(p=>p.id===g.pisoId);
+    const isExp = expandedGasto===g.id;
+    const fechaLabel = g.fecha ? new Date(g.fecha).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin fecha';
+    html += `
+    <div class="gasto-card ${isExp?'expanded':''}" onclick="toggleGasto('${g.id}')">
+      <div class="gasto-top">
+        <div class="gasto-cat-ico" style="background:${cat.bg}">${cat.ico}</div>
+        <div class="gasto-info">
+          <div class="gasto-titulo">${g.concepto||'Sin concepto'}</div>
+          <div class="gasto-sub">${piso?`${piso.ico} ${piso.nombre.split(' ').slice(0,2).join(' ')} · `:''}${fechaLabel} · ${cat.label}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="gasto-importe">-${fmt(Number(g.importe)||0)}</div>
+          <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap">
+            <span class="fiscal-badge fiscal-si">${cat.deducible}</span>
+            ${g.facturaUrl?`<span class="fiscal-badge" style="background:rgba(91,155,213,0.15);color:var(--info)">📄 DOC</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div class="gasto-detail ${isExp?'open':''}">
+        <div class="gasto-fields">
+          <div class="gasto-field"><div class="gfl">Proveedor</div><div class="gfv" style="font-family:var(--font)">${g.proveedor||'—'}</div></div>
+          <div class="gasto-field"><div class="gfl">Nº Factura</div><div class="gfv">${g.numFactura||'—'}</div></div>
+          <div class="gasto-field"><div class="gfl">Forma de pago</div><div class="gfv" style="font-family:var(--font)">${g.formaPago||'—'}</div></div>
+          <div class="gasto-field"><div class="gfl">IVA</div><div class="gfv">${g.conIva?'Incluido':'Sin IVA'}</div></div>
+        </div>
+        ${g.notas?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">${g.notas}</div>`:''}
+        ${g.facturaUrl?`
+        <div style="background:rgba(91,155,213,0.1);border:0.5px solid rgba(91,155,213,0.3);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:16px">📄</span>
+          <span style="font-size:12px;flex:1;color:var(--info)">Factura/recibo adjunto en Drive</span>
+          <a href="${g.facturaUrl}" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">👁️ Ver en Drive</button></a>
+        </div>`:''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${!g.facturaUrl?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();subirFacturaGasto('${g.id}')">📎 Adjuntar factura</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();abrirFormGasto('${g.id}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmarEliminarGasto('${g.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function abrirFormGasto(id) {
+  const g = id ? GASTOS_FISCAL.find(x=>x.id===id) : null;
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}" ${g&&g.pisoId===p.id?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  const catOpts  = CATS_FISCAL.map(c=>`<option value="${c.id}" ${g&&g.categoria===c.id?'selected':''}>${c.ico} ${c.label} · ${c.deducible}</option>`).join('');
+  const pagoOpts = ['Transferencia','Tarjeta','Efectivo','Domiciliación','Bizum'].map(o=>`<option ${g&&g.formaPago===o?'selected':''}>${o}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = g ? '✏️ Editar gasto' : '🧾 Nuevo gasto / factura';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div><label class="form-label">Propiedad</label><select id="gg_piso" class="form-input">${pisoOpts}</select></div>
+      <div><label class="form-label">Concepto *</label><input id="gg_concepto" type="text" class="form-input" placeholder="Reparación caldera, Seguro hogar…" value="${g?g.concepto:''}"></div>
+      <div><label class="form-label">Categoría fiscal deducible</label><select id="gg_cat" class="form-input">${catOpts}</select></div>
+      <div class="form-row-2">
+        <div><label class="form-label">Importe (€)</label><input id="gg_importe" type="number" step="0.01" class="form-input" placeholder="0.00" value="${g?g.importe:''}"></div>
+        <div><label class="form-label">Fecha factura</label><input id="gg_fecha" type="date" class="form-input" value="${g?g.fecha:''}"></div>
+      </div>
+      <div class="form-row-2">
+        <div><label class="form-label">Proveedor / Empresa</label><input id="gg_prov" type="text" class="form-input" placeholder="Nombre empresa" value="${g?g.proveedor:''}"></div>
+        <div><label class="form-label">Nº Factura</label><input id="gg_nfact" type="text" class="form-input" placeholder="F-2026-001" value="${g?g.numFactura:''}"></div>
+      </div>
+      <div class="form-row-2">
+        <div><label class="form-label">Forma de pago</label><select id="gg_pago" class="form-input">${pagoOpts}</select></div>
+        <div><label class="form-label">IVA</label><select id="gg_iva" class="form-input">
+          <option value="si" ${g&&g.conIva?'selected':''}>Sí, incluido</option>
+          <option value="no" ${g&&!g.conIva?'selected':''}>No / Sin IVA</option>
+        </select></div>
+      </div>
+      <div><label class="form-label">Notas</label><textarea id="gg_notas" class="form-input" rows="2" style="resize:none;line-height:1.6" placeholder="Observaciones…">${g?g.notas:''}</textarea></div>
+      <div>
+        <label class="form-label">Factura / Recibo</label>
+        ${g && g.facturaUrl
+          ? `<div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px">
+               <span style="font-size:14px">📄</span>
+               <span style="font-size:12px;flex:1;color:var(--success)">Factura adjunta</span>
+               <a href="${g.facturaUrl}" target="_blank"><button type="button" class="btn btn-ghost btn-sm">👁️ Ver</button></a>
+             </div>`
+          : `<div id="facturaDropZone" style="border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:all 0.15s" onclick="document.getElementById('gg_facturaFile').click()">
+               <div style="font-size:22px;margin-bottom:4px">📎</div>
+               <div style="font-size:13px;font-weight:500">Adjuntar factura o recibo</div>
+               <div style="font-size:11px;color:var(--muted);margin-top:2px">PDF, imagen · máx. 20 MB</div>
+               <div id="facturaFileName" style="font-size:12px;color:var(--accent);margin-top:6px;display:none"></div>
+             </div>
+             <input type="file" id="gg_facturaFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="onFacturaSelected(this)">`
+        }
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="guardarGasto('${g?g.id:''}')">💾 ${g?'Guardar cambios':'Registrar gasto'}</button>
+        ${g?`<button class="btn btn-danger btn-sm" onclick="confirmarEliminarGasto('${g.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+function onFacturaSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const zone = document.getElementById('facturaDropZone');
+  const label = document.getElementById('facturaFileName');
+  if (zone) { zone.style.borderColor = 'var(--accent)'; zone.style.background = 'rgba(200,169,110,0.08)'; }
+  if (label) { label.style.display = 'block'; label.textContent = `✓ ${file.name.substring(0,40)}`; }
+}
+
+async function guardarGasto(id) {
+  const concepto = document.getElementById('gg_concepto')?.value?.trim();
+  if (!concepto) { showToast('⚠️ El concepto es obligatorio'); return; }
+  const datos = {
+    pisoId:     document.getElementById('gg_piso').value,
+    concepto,
+    categoria:  document.getElementById('gg_cat').value,
+    importe:    parseFloat(document.getElementById('gg_importe').value)||0,
+    fecha:      document.getElementById('gg_fecha').value,
+    proveedor:  document.getElementById('gg_prov').value.trim(),
+    numFactura: document.getElementById('gg_nfact').value.trim(),
+    formaPago:  document.getElementById('gg_pago').value,
+    conIva:     document.getElementById('gg_iva').value==='si',
+    notas:      document.getElementById('gg_notas').value.trim(),
+  };
+
+  // Capturar archivo de factura si se seleccionó
+  const facturaInput = document.getElementById('gg_facturaFile');
+  const facturaFile  = facturaInput && facturaInput.files[0] ? facturaInput.files[0] : null;
+
+  closeSheet(); showToast('💾 Guardando…');
+
+  let gastoId = id;
+  if (id) {
+    const idx = GASTOS_FISCAL.findIndex(x=>x.id===id);
+    if (idx!==-1) GASTOS_FISCAL[idx] = { ...GASTOS_FISCAL[idx], ...datos };
+    await api({ action:'update', sheet:'Gastos', id, data:{ piso_id:datos.pisoId, concepto:datos.concepto, categoria:datos.categoria, importe:datos.importe, fecha:datos.fecha, proveedor:datos.proveedor, num_factura:datos.numFactura, forma_pago:datos.formaPago, con_iva:datos.conIva, notas:datos.notas } });
+    showToast('✅ Gasto actualizado');
+  } else {
+    const gasto = { id:'g_'+Date.now(), ...datos, facturaUrl:null };
+    gastoId = gasto.id;
+    GASTOS_FISCAL.unshift(gasto);
+    await api({ action:'write', sheet:'Gastos', data:{ id:gasto.id, piso_id:datos.pisoId, concepto:datos.concepto, categoria:datos.categoria, importe:datos.importe, fecha:datos.fecha, proveedor:datos.proveedor, num_factura:datos.numFactura, forma_pago:datos.formaPago, con_iva:datos.conIva, notas:datos.notas, factura_url:'', creado_en:new Date().toISOString().split('T')[0] } });
+    showToast('✅ Gasto registrado');
+  }
+
+  // Subir factura si se adjuntó
+  if (facturaFile && gastoId) {
+    showToast('☁️ Subiendo factura a Drive…');
+    gastoParaFactura = gastoId;
+    const piso = PISOS.find(p=>p.id===datos.pisoId);
+    await new Promise(resolve=>{
+      const reader = new FileReader();
+      reader.onload = async (e)=>{
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:facturaFile.name, mimeType:facturaFile.type||'application/pdf', base64Data:base64, pisoId:datos.pisoId, pisoNombre:piso?.nombre||'General', carpeta:'Gastos' });
+        if (res.ok && res.data && res.data.success) {
+          const idx = GASTOS_FISCAL.findIndex(g=>g.id===gastoId);
+          if (idx!==-1) GASTOS_FISCAL[idx].facturaUrl = res.data.url;
+          await api({ action:'update', sheet:'Gastos', id:gastoId, data:{ factura_url:res.data.url } });
+          showToast('✅ Factura adjuntada en Drive');
+        } else { showToast('⚠️ Error subiendo factura'); }
+        gastoParaFactura = null;
+        resolve();
+      };
+      reader.readAsDataURL(facturaFile);
+    });
+  }
+
+  // Actualizar gastos en la vista de propiedades y finanzas
+  actualizarGastosPorPiso();
+  renderGastos(document.getElementById('mainContent'));
+}
+
+function confirmarEliminarGasto(id) {
+  const g = GASTOS_FISCAL.find(x=>x.id===id);
+  closeSheet();
+  setTimeout(()=>{
+    document.getElementById('sheetTitle').textContent = '⚠️ Eliminar gasto';
+    document.getElementById('sheetContent').innerHTML = `
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">¿Eliminar "<strong style="color:var(--text)">${g?g.concepto:'este gasto'}</strong>"?<br>Esta acción no se puede deshacer.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeSheet()">Cancelar</button>
+          <button class="btn btn-danger" style="flex:1;justify-content:center" onclick="eliminarGasto('${id}')">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+    document.getElementById('sheetBackdrop').classList.add('open');
+    document.getElementById('sheet').classList.add('open');
+  }, 150);
+}
+
+async function eliminarGasto(id) {
+  closeSheet();
+  const idx = GASTOS_FISCAL.findIndex(x=>x.id===id);
+  const g = idx !== -1 ? GASTOS_FISCAL[idx] : null;
+  if (idx !== -1) GASTOS_FISCAL.splice(idx, 1);
+  await api({ action:'delete', sheet:'Gastos', id });
+  if (g && g.facturaUrl) await api({ action:'moveUrlToBorrados', fileUrl:g.facturaUrl });
+  showToast('🗑️ Gasto eliminado');
+  actualizarGastosPorPiso();
+  renderGastos(document.getElementById('mainContent'));
+}
+
+function subirFacturaGasto(gastoId) {
+  gastoParaFactura = gastoId;
+  const g = GASTOS_FISCAL.find(x=>x.id===gastoId);
+  selectedPisoForUpload    = g?.pisoId || (PISOS[0]&&PISOS[0].id);
+  selectedCarpetaForUpload = 'Gastos';
+  document.getElementById('fileInput').accept = '.pdf,.jpg,.jpeg,.png';
+  document.getElementById('fileInput').click();
+}
+
+// Override handleFiles para detectar si viene de un gasto
+const _origHandleFiles = handleFiles;
+window.handleFiles = async function(input) {
+  if (gastoParaFactura) {
+    const files = Array.from(input.files);
+    const gasto = GASTOS_FISCAL.find(g=>g.id===gastoParaFactura);
+    if (!files.length || !gasto) { gastoParaFactura=null; input.value=''; return; }
+    const file = files[0];
+    const piso = PISOS.find(p=>p.id===gasto.pisoId);
+    showToast('☁️ Subiendo factura…');
+    await new Promise(resolve=>{
+      const reader = new FileReader();
+      reader.onload = async (e)=>{
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/pdf', base64Data:base64, pisoId:gasto.pisoId, pisoNombre:piso?.nombre||'General', carpeta:'Gastos' });
+        if (res.ok && res.data && res.data.success) {
+          const idx = GASTOS_FISCAL.findIndex(g=>g.id===gastoParaFactura);
+          if (idx!==-1) {
+            GASTOS_FISCAL[idx].facturaUrl = res.data.url;
+            await api({ action:'update', sheet:'Gastos', id:gastoParaFactura, data:{ factura_url:res.data.url } });
+          }
+          showToast('✅ Factura adjuntada en Drive');
+          if (currentView==='gastos') renderGastos(document.getElementById('mainContent'));
+        } else { showToast('⚠️ Error subiendo factura'); }
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+    gastoParaFactura=null; input.value='';
+  } else {
+    await _origHandleFiles(input);
+  }
+};
+
+function exportarFiscal() {
+  const gastosF = getGastosFiltrados();
+  const resumen = getResumenFiscal(gastosF);
+  const total   = gastosF.reduce((s,g)=>s+(Number(g.importe)||0),0);
+  const piso    = pisoFiltroG!=='todos' ? PISOS.find(p=>p.id===pisoFiltroG)?.nombre : 'Todas las propiedades';
+  let csv = `RESUMEN GASTOS DEDUCIBLES IRPF ${anioFiltro}\nPropiedad: ${piso}\n\nCategoría;Importe (€);% Deducible\n`;
+  Object.entries(resumen).forEach(([k,v])=>{ csv+=`${v.label};${v.total.toFixed(2)};${v.deducible}\n`; });
+  csv+=`\nTOTAL DEDUCIBLE;${total.toFixed(2)};—\n\nDETALLE DE GASTOS\nFecha;Concepto;Proveedor;Categoría;Importe;Nº Factura;Forma pago;Factura adjunta\n`;
+  [...gastosF].sort((a,b)=>new Date(a.fecha||0)-new Date(b.fecha||0)).forEach(g=>{
+    const cat=getCatFiscal(g.categoria);
+    csv+=`${g.fecha||''};${g.concepto||''};${g.proveedor||''};${cat.label};${(Number(g.importe)||0).toFixed(2)};${g.numFactura||''};${g.formaPago||''};${g.facturaUrl?'Sí':'No'}\n`;
+  });
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`gastos_irpf_${anioFiltro}.csv`; a.click();
+  showToast('✅ CSV exportado · Ábrelo en Excel para la declaración');
+}
+
+
+// ══════════════════════════════════════════════════════════
+// ── ADJUNTO UNIVERSAL ──
+// ══════════════════════════════════════════════════════════
+function htmlAdjunto(prefix, label) {
+  return `<div>
+    <label class="form-label">${label||'Adjuntar documentos (PDF, imagen)'}</label>
+    <div id="${prefix}_dropzone" style="border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--surface2)" onclick="document.getElementById('${prefix}_file').click()">
+      <div style="font-size:20px;margin-bottom:4px">📎</div>
+      <div style="font-size:13px;font-weight:500">Adjuntar documento</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">PDF, imagen · máx. 20 MB · varios archivos</div>
+    </div>
+    <div id="${prefix}_filelist" style="margin-top:6px;display:flex;flex-direction:column;gap:4px"></div>
+    <input type="file" id="${prefix}_file" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple onchange="onAdjuntoSelected('${prefix}',this)">
+  </div>`;
+}
+
+function onAdjuntoSelected(prefix, input) {
+  const files = Array.from(input.files);
+  const zone  = document.getElementById(prefix+'_dropzone');
+  const list  = document.getElementById(prefix+'_filelist');
+  if (!files.length) return;
+  if (zone) { zone.style.borderColor='var(--accent)'; zone.style.background='rgba(200,169,110,0.06)'; }
+  if (list) list.innerHTML = files.map(f=>`<div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:6px;padding:7px 10px"><span>📄</span><span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--success)">${f.name}</span><span style="font-size:11px;color:var(--muted)">${(f.size/1024/1024).toFixed(1)} MB</span></div>`).join('');
+}
+
+async function subirAdjuntos(prefix, pisoId, pisoNombre, carpeta) {
+  const input = document.getElementById(prefix+'_file');
+  if (!input || !input.files || !input.files.length) return [];
+  const pNombre = pisoNombre || PISOS.find(p=>p.id===pisoId)?.nombre || 'General';
+  const subidos = [];
+  for (const file of Array.from(input.files)) {
+    if (file.size > 20*1024*1024) { showToast(`⚠️ "${file.name.substring(0,20)}" supera 20 MB`); continue; }
+    showToast(`☁️ Subiendo "${file.name.substring(0,22)}"…`);
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/octet-stream', base64Data:base64, pisoId, pisoNombre:pNombre, carpeta:carpeta||'General' });
+        if (res.ok && res.data && res.data.success) { subidos.push({ url:res.data.url, name:file.name }); showToast(`✅ "${file.name.substring(0,20)}" guardado`); }
+        else showToast(`⚠️ Error subiendo "${file.name.substring(0,20)}"`);
+        resolve();
+      };
+      reader.onerror = () => { showToast('⚠️ Error leyendo archivo'); resolve(); };
+      reader.readAsDataURL(file);
+    });
+  }
+  return subidos;
+}
+
+// ══════════════════════════════════════════════════════════
+// ── MÓDULO: OTRA DOCUMENTACIÓN ──
+// ══════════════════════════════════════════════════════════
+
+const OTRA_DOC = [];
+let otraDocExpandida = null;
+let otraDocFiltro = 'todos';
+
+const OTRADOC_CATS = [
+  { id:'instalaciones', label:'Instalaciones',     ico:'🔧' },
+  { id:'legal',         label:'Legal & Licencias',  ico:'⚖️' },
+  { id:'seguros',       label:'Seguros',             ico:'🛡️' },
+  { id:'comunidad',     label:'Comunidad',           ico:'🏛️' },
+  { id:'certificados',  label:'Certificados',        ico:'📜' },
+  { id:'inspeccion',    label:'Inspecciones & ITE',  ico:'🔍' },
+  { id:'reforma',       label:'Reformas & Obras',    ico:'🏗️' },
+  { id:'otros',         label:'Otros',               ico:'📂' },
+];
+
+function getOtraDocCat(id) {
+  return OTRADOC_CATS.find(c=>c.id===id) || OTRADOC_CATS[OTRADOC_CATS.length-1];
+}
+
+function renderOtraDoc(el) {
+  const pisoOpts = '<option value="todos">Todas las propiedades</option>' +
+    PISOS.map(p=>`<option value="${p.id}" ${otraDocFiltro===p.id?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  const filtrados = otraDocFiltro==='todos' ? OTRA_DOC : OTRA_DOC.filter(d=>d.pisoId===otraDocFiltro);
+  const ordenados = [...filtrados].sort((a,b)=>new Date(b.fecha||b.creado_en||0)-new Date(a.fecha||a.creado_en||0));
+
+  let html = `
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:14px" onclick="abrirFormOtraDoc('')">
+      + Añadir documento
+    </button>
+    <div style="margin-bottom:14px">
+      <select class="form-input" style="font-size:13px;padding:8px 12px" onchange="otraDocFiltro=this.value;renderOtraDoc(document.getElementById('mainContent'))">${pisoOpts}</select>
+    </div>
+    <div class="section-label">${ordenados.length} documento${ordenados.length!==1?'s':''}</div>`;
+
+  if (ordenados.length === 0) {
+    html += `<div class="empty"><div class="ei">📂</div><p>No hay documentos registrados aún.<br>Pulsa el botón de arriba para añadir el primero.</p></div>`;
+  }
+
+  ordenados.forEach(doc => {
+    const piso = PISOS.find(p=>p.id===doc.pisoId);
+    const cat  = getOtraDocCat(doc.categoria);
+    const isExp = otraDocExpandida === doc.id;
+    const fecha = doc.fecha ? new Date(doc.fecha).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    html += `
+    <div style="background:var(--surface);border:0.5px solid ${isExp?'var(--border2)':'var(--border)'};border-radius:var(--radius);margin-bottom:10px;overflow:hidden;cursor:pointer" onclick="toggleOtraDoc('${doc.id}')">
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 14px">
+        <div style="width:38px;height:38px;border-radius:var(--radius-sm);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${cat.ico}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${doc.titulo}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${piso?`${piso.ico} ${piso.nombre.split(' ').slice(0,2).join(' ')} · `:''}${cat.label} · ${fecha}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          ${doc.fileUrl?`<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(76,175,110,0.15);color:var(--success);font-family:var(--mono)">DOC</span>`:`<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--muted);font-family:var(--mono)">SIN</span>`}
+          <span style="color:var(--muted);font-size:14px;display:inline-block;transform:rotate(${isExp?90:0}deg)">›</span>
+        </div>
+      </div>
+      ${isExp?`
+      <div style="border-top:0.5px solid var(--border);padding:12px 14px">
+        ${doc.descripcion?`<div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px">${doc.descripcion}</div>`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Fecha</div>
+            <div style="font-size:12px;font-family:var(--mono)">${fecha}</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Categoría</div>
+            <div style="font-size:12px">${cat.ico} ${cat.label}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${doc.fileUrl?`<a href="${doc.fileUrl}" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">📄 Ver documento</button></a>`:`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();subirDocOtraDoc('${doc.id}')">📎 Adjuntar ahora</button>`}
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();abrirFormOtraDoc('${doc.id}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();eliminarOtraDoc('${doc.id}')">🗑️</button>
+        </div>
+      </div>`:''}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function toggleOtraDoc(id) {
+  otraDocExpandida = otraDocExpandida===id ? null : id;
+  renderOtraDoc(document.getElementById('mainContent'));
+}
+
+function abrirFormOtraDoc(id) {
+  const doc = id ? OTRA_DOC.find(x=>x.id===id) : null;
+  const pisoOpts = PISOS.map(p=>`<option value="${p.id}" ${doc&&doc.pisoId===p.id?'selected':''}>${p.ico} ${p.nombre.split(' ').slice(0,2).join(' ')}</option>`).join('');
+  const catOpts  = OTRADOC_CATS.map(c=>`<option value="${c.id}" ${doc&&doc.categoria===c.id?'selected':''}>${c.ico} ${c.label}</option>`).join('');
+  document.getElementById('sheetTitle').textContent = doc ? '✏️ Editar documento' : '📂 Nuevo documento';
+  document.getElementById('sheetContent').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><label class="form-label">Propiedad</label>
+        <select id="od_piso" class="form-input">${pisoOpts}</select></div>
+      <div><label class="form-label">Título *</label>
+        <input id="od_titulo" type="text" class="form-input" placeholder="Ej: Cambio caldera · Informe DGA" value="${doc?doc.titulo:''}"></div>
+      <div><label class="form-label">Categoría</label>
+        <select id="od_cat" class="form-input">${catOpts}</select></div>
+      <div><label class="form-label">Fecha del documento</label>
+        <input id="od_fecha" type="date" class="form-input" value="${doc?doc.fecha:new Date().toISOString().split('T')[0]}"></div>
+      <div><label class="form-label">Descripción</label>
+        <textarea id="od_desc" class="form-input" rows="4" style="resize:none;line-height:1.7" placeholder="Describe qué es este documento, para qué sirve, referencia de expediente, empresa que lo emitió…">${doc?doc.descripcion:''}</textarea></div>
+      <div><label class="form-label">Adjuntar archivo (PDF, imagen)</label>
+        ${doc&&doc.fileUrl
+          ?`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:8px">
+              <span style="color:var(--success)">📄</span>
+              <span style="font-size:12px;flex:1;color:var(--success);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${doc.fileName||'Documento adjunto'}</span>
+              <a href="${doc.fileUrl}" target="_blank"><button type="button" class="btn btn-ghost btn-sm">👁️ Ver</button></a>
+            </div>`
+          :`<div style="border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;background:var(--surface2)" id="od_dropzone" onclick="document.getElementById('od_file').click()">
+              <div style="font-size:22px;margin-bottom:4px">📎</div>
+              <div style="font-size:13px;font-weight:500">Adjuntar documento</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">PDF, imagen · máx. 20 MB</div>
+              <div id="od_filelist" style="margin-top:6px"></div>
+            </div>
+            <input type="file" id="od_file" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="onOdFileSelected(this)">`
+        }
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="guardarOtraDoc('${doc?doc.id:''}')">
+          💾 ${doc?'Guardar cambios':'Añadir documento'}
+        </button>
+        ${doc?`<button class="btn btn-danger btn-sm" onclick="eliminarOtraDoc('${doc.id}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+
+function onOdFileSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const zone = document.getElementById('od_dropzone');
+  const list = document.getElementById('od_filelist');
+  if (zone) { zone.style.borderColor='var(--accent)'; zone.style.background='rgba(200,169,110,0.06)'; }
+  if (list) list.innerHTML = `<div style="font-size:12px;color:var(--success);margin-top:4px">✓ ${file.name}</div>`;
+}
+
+async function guardarOtraDoc(id) {
+  const titulo = document.getElementById('od_titulo')?.value?.trim();
+  if (!titulo) { showToast('⚠️ El título es obligatorio'); return; }
+  const datos = {
+    pisoId:      document.getElementById('od_piso')?.value || (PISOS[0]&&PISOS[0].id),
+    titulo,
+    categoria:   document.getElementById('od_cat')?.value || 'otros',
+    fecha:       document.getElementById('od_fecha')?.value || new Date().toISOString().split('T')[0],
+    descripcion: document.getElementById('od_desc')?.value?.trim() || '',
+  };
+  const fileInput = document.getElementById('od_file');
+  const file = fileInput && fileInput.files[0] ? fileInput.files[0] : null;
+  closeSheet();
+  showToast('💾 Guardando…');
+  let docId = id;
+  if (id) {
+    const idx = OTRA_DOC.findIndex(x=>x.id===id);
+    if (idx !== -1) OTRA_DOC[idx] = { ...OTRA_DOC[idx], ...datos };
+    await api({ action:'update', sheet:'OtraDoc', id, data:{ piso_id:datos.pisoId, titulo:datos.titulo, categoria:datos.categoria, fecha:datos.fecha, descripcion:datos.descripcion }});
+    showToast('✅ Documento actualizado');
+  } else {
+    const doc = { id:'od_'+Date.now(), ...datos, fileUrl:null, fileName:null, creado_en:new Date().toISOString().split('T')[0] };
+    docId = doc.id;
+    OTRA_DOC.unshift(doc);
+    await api({ action:'write', sheet:'OtraDoc', data:{ id:doc.id, piso_id:datos.pisoId, titulo:datos.titulo, categoria:datos.categoria, fecha:datos.fecha, descripcion:datos.descripcion, file_url:'', file_name:'', creado_en:doc.creado_en }});
+    showToast('✅ Documento añadido');
+  }
+  if (file && docId) {
+    const piso     = PISOS.find(p=>p.id===datos.pisoId);
+    const catLabel = getOtraDocCat(datos.categoria).label; // ej: "Instalaciones", "Legal & Licencias"
+    const carpeta  = `Documentacion/${catLabel}`;          // subcarpeta por categoría
+    if (file.size > 20*1024*1024) { showToast('⚠️ El archivo supera 20 MB'); }
+    else {
+      showToast(`☁️ Subiendo a Drive / ${catLabel}…`);
+      await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = e.target.result.split(',')[1];
+          const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/octet-stream', base64Data:base64, pisoId:datos.pisoId, pisoNombre:piso?.nombre||'General', carpeta });
+          if (res.ok && res.data && res.data.success) {
+            const idx = OTRA_DOC.findIndex(x=>x.id===docId);
+            if (idx !== -1) { OTRA_DOC[idx].fileUrl=res.data.url; OTRA_DOC[idx].fileName=file.name; }
+            await api({ action:'update', sheet:'OtraDoc', id:docId, data:{ file_url:res.data.url, file_name:file.name }});
+            showToast(`✅ Guardado en Drive / ${catLabel}`);
+          } else showToast('⚠️ Error subiendo el archivo');
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+  renderOtraDoc(document.getElementById('mainContent'));
+}
+
+async function eliminarOtraDoc(id) {
+  const doc = OTRA_DOC.find(x=>x.id===id);
+  if (!confirm(`¿Eliminar "${doc?doc.titulo:'este documento'}"?`)) return;
+  closeSheet();
+  const idx = OTRA_DOC.findIndex(x=>x.id===id);
+  if (idx !== -1) OTRA_DOC.splice(idx, 1);
+  await api({ action:'delete', sheet:'OtraDoc', id });
+  if (doc && doc.fileUrl) await api({ action:'moveUrlToBorrados', fileUrl:doc.fileUrl });
+  showToast('🗑️ Documento eliminado · archivo movido a BORRADOS en Drive');
+  renderOtraDoc(document.getElementById('mainContent'));
+}
+
+async function subirDocOtraDoc(docId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const doc      = OTRA_DOC.find(x=>x.id===docId);
+    const piso     = doc ? PISOS.find(p=>p.id===doc.pisoId) : null;
+    const catLabel = doc ? getOtraDocCat(doc.categoria).label : 'Otros';
+    const carpeta  = `Documentacion/${catLabel}`;
+    if (file.size > 20*1024*1024) { showToast('⚠️ El archivo supera 20 MB'); return; }
+    showToast(`☁️ Subiendo a Drive / ${catLabel}…`);
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        const res = await api({ action:'upload', fileName:file.name, mimeType:file.type||'application/octet-stream', base64Data:base64, pisoId:doc?.pisoId||(PISOS[0]?.id), pisoNombre:piso?.nombre||'General', carpeta });
+        if (res.ok && res.data && res.data.success) {
+          const idx = OTRA_DOC.findIndex(x=>x.id===docId);
+          if (idx !== -1) { OTRA_DOC[idx].fileUrl=res.data.url; OTRA_DOC[idx].fileName=file.name; }
+          await api({ action:'update', sheet:'OtraDoc', id:docId, data:{ file_url:res.data.url, file_name:file.name }});
+          showToast(`✅ Guardado en Drive / ${catLabel}`);
+          renderOtraDoc(document.getElementById('mainContent'));
+        } else showToast('⚠️ Error subiendo archivo');
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
+}
+
+cargarTodo();
+</script>
+</body>
+</html>
