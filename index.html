@@ -1008,8 +1008,9 @@ function renderPisoDetail(el) {
   const pisoId = p.id;
   const carpetasSnap = p.carpetas.map(c => ({ id: c.id, nombre: c.nombre }));
 
+  const pisoNombre = p.nombre;
   carpetasSnap.forEach(function(c) {
-    api({ action:'getFiles', pisoId: pisoId, carpeta: c.nombre })
+    api({ action:'getFiles', pisoId: pisoId, pisoNombre: pisoNombre, carpeta: c.nombre })
       .then(function(res) {
         const count = (res && res.ok && res.data && res.data.files) ? res.data.files.length : 0;
         // Actualizar en memoria
@@ -1111,7 +1112,7 @@ function renderCarpeta(el) {
     </div>`;
 
   // Cargar archivos reales desde Drive y actualizar contador
-  api({ action:'getFiles', pisoId: p.id, carpeta: c.nombre })
+  api({ action:'getFiles', pisoId: p.id, pisoNombre: p.nombre, carpeta: c.nombre })
     .then(res => {
       const lista = document.getElementById('listaArchivos');
       if (!lista) return;
