@@ -1149,20 +1149,23 @@ function renderCarpeta(el) {
         return;
       }
       lista.innerHTML = files.map(f => {
-        const ext = String(f.nombre||'').split('.').pop().toUpperCase().substring(0,4);
+        // Compatible con formato Drive (file_id, nombre) y Sheets legado (id, nombre)
+        const fileId  = f.file_id || f.id || '';
+        const nombre  = f.nombre  || f.name || 'Sin nombre';
+        const fileUrl = f.url || '';
+        const fecha   = f.creado_en ? String(f.creado_en).split('T')[0] : '';
+        const ext = String(nombre).split('.').pop().toUpperCase().substring(0,4);
         const extColor = ext==='PDF'?'var(--danger)':['DOC','DOCX'].includes(ext)?'var(--info)':['XLS','XLSX'].includes(ext)?'var(--success)':'var(--muted)';
         return `
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
           <div style="width:36px;height:36px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-family:var(--mono);color:${extColor};font-weight:500">${ext}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.nombre||'Sin nombre'}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">${f.creado_en||''}</div>
+            <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${fecha}</div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
-            <a href="${f.url}" target="_blank" style="text-decoration:none">
-              <button class="btn btn-ghost btn-sm">👁️ Ver</button>
-            </a>
-            <button class="btn btn-danger btn-sm" onclick="eliminarDoc('${f.file_id}')">🗑️</button>
+            ${fileUrl?`<a href="${fileUrl}" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">👁️ Ver</button></a>`:''}
+            ${fileId?`<button class="btn btn-danger btn-sm" onclick="eliminarDoc('${fileId}')">🗑️</button>`:''}
           </div>
         </div>`;
       }).join('');
@@ -2906,7 +2909,7 @@ async function eliminarSuministro(id) {
 // ── GOOGLE SHEETS + DRIVE — versión 7 ──
 // ══════════════════════════════════════════════════════════
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-UxGj4NdvFmnYEFsFa47t8Vg3Na8BJzJEPuavCrrP1skiPB3FP3MYYBkxZlKWWOJbPQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdMiHphZvhxm0x3P6n6fkbqbXqaoWplGFKWcmntcrcd8IK8lOG-91oBxLRQMVd5ujn/exec';
 
 let selectedCarpetaForUpload = 'General';
 let SHEETS_OK = false;
