@@ -1126,7 +1126,9 @@ function renderCarpeta(el) {
     .then(res => {
       const lista = document.getElementById('listaArchivos');
       if (!lista) return;
+      console.log('getFiles response:', JSON.stringify(res).substring(0, 500));
       const files = (res.ok && res.data && res.data.files) ? res.data.files : [];
+      console.log('Archivos encontrados:', files.length, 'en carpeta:', c.nombre, 'piso:', p.nombre);
 
       // Actualizar contador en la carpeta local
       const pisoIdx = PISOS.findIndex(x => x.id === p.id);
@@ -1138,6 +1140,10 @@ function renderCarpeta(el) {
         if (sub) sub.textContent = `${files.length} archivo${files.length !== 1 ? 's' : ''} · ${p.nombre}`;
       }
 
+      if (!res.ok) {
+        lista.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>Error consultando Drive.<br><small style="font-family:monospace;color:var(--danger)">${res.error||'Sin respuesta'}</small></p></div>`;
+        return;
+      }
       if (files.length === 0) {
         lista.innerHTML = `<div class="empty"><div class="ei">📂</div><p>Carpeta vacía en Drive.<br>Pulsa el área de arriba para subir el primer documento.</p></div>`;
         return;
