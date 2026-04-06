@@ -1009,24 +1009,34 @@ function renderPisoDetail(el) {
   const carpetasSnap = p.carpetas.map(c => ({ id: c.id, nombre: c.nombre }));
 
   const pisoNombre = p.nombre;
+  let totalActualizado = 0;
+  let pendientes = carpetasSnap.length;
+
   carpetasSnap.forEach(function(c) {
     api({ action:'getFiles', pisoId: pisoId, pisoNombre: pisoNombre, carpeta: c.nombre })
       .then(function(res) {
         const count = (res && res.ok && res.data && res.data.files) ? res.data.files.length : 0;
+        totalActualizado += count;
         // Actualizar en memoria
         const pisoIdx = PISOS.findIndex(x => x.id === pisoId);
         if (pisoIdx !== -1) {
           const ci = PISOS[pisoIdx].carpetas.findIndex(x => x.id === c.id);
           if (ci !== -1) PISOS[pisoIdx].carpetas[ci].count = count;
         }
-        // Actualizar el elemento en pantalla
+        // Actualizar el elemento en pantalla inmediatamente
         const countEl = document.getElementById('count_' + pisoId + '_' + c.id);
         if (countEl) {
           countEl.textContent = count + ' archivo' + (count !== 1 ? 's' : '');
         }
+        // Cuando terminen todas las carpetas, mostrar confirmación
+        pendientes--;
+        if (pendientes === 0) {
+          showToast('✅ Contadores actualizados desde Drive');
+        }
       })
       .catch(function(e) {
-        console.warn('Error actualizando contador carpeta ' + c.nombre + ':', e);
+        pendientes--;
+        console.warn('Error carpeta ' + c.nombre + ':', e);
       });
   });
 }
@@ -1129,7 +1139,7 @@ function renderCarpeta(el) {
       }
 
       if (files.length === 0) {
-        lista.innerHTML = `<div class="empty"><div class="ei">📂</div><p>Carpeta vacía.<br>Pulsa el área de arriba para subir el primer documento.</p></div>`;
+        lista.innerHTML = `<div class="empty"><div class="ei">📂</div><p>Carpeta vacía en Drive.<br>Pulsa el área de arriba para subir el primer documento.</p></div>`;
         return;
       }
       lista.innerHTML = files.map(f => {
